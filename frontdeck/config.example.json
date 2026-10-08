@@ -1,0 +1,32 @@
+{
+  "name": "내 PC",
+  "profiles": [
+    {"id": "work", "name": "작업", "actions": ["notepad", "calculator", "explorer", "desktop", "taskview", "capture", "copy", "paste", "undo", "find", "newtab", "escape"]},
+    {"id": "media", "name": "미디어", "actions": ["previous", "play", "next", "quieter", "mute", "louder", "back", "fullscreen", "forward", "refresh", "youtube", "explorer"]}
+  ],
+  "actions": [
+    {"id": "notepad", "label": "메모장", "icon": "note", "tone": "blue", "type": "launch", "executable": "notepad.exe"},
+    {"id": "calculator", "label": "계산기", "icon": "calculator", "tone": "blue", "type": "launch", "executable": "calc.exe"},
+    {"id": "explorer", "label": "탐색기", "icon": "folder", "tone": "blue", "type": "launch", "executable": "explorer.exe"},
+    {"id": "desktop", "label": "바탕 화면", "icon": "desktop", "tone": "violet", "type": "hotkey", "keys": ["WIN", "D"]},
+    {"id": "taskview", "label": "작업 보기", "icon": "windows", "tone": "violet", "type": "hotkey", "keys": ["WIN", "TAB"]},
+    {"id": "capture", "label": "화면 캡처", "icon": "capture", "tone": "violet", "type": "hotkey", "keys": ["WIN", "SHIFT", "S"]},
+    {"id": "copy", "label": "복사", "icon": "copy", "tone": "slate", "type": "hotkey", "keys": ["CTRL", "C"]},
+    {"id": "paste", "label": "붙여넣기", "icon": "paste", "tone": "slate", "type": "hotkey", "keys": ["CTRL", "V"]},
+    {"id": "undo", "label": "실행 취소", "icon": "undo", "tone": "slate", "type": "hotkey", "keys": ["CTRL", "Z"]},
+    {"id": "find", "label": "찾기", "icon": "search", "tone": "slate", "type": "hotkey", "keys": ["CTRL", "F"]},
+    {"id": "newtab", "label": "새 탭", "icon": "plus", "tone": "slate", "type": "hotkey", "keys": ["CTRL", "T"]},
+    {"id": "escape", "label": "닫기 / 취소", "icon": "escape", "tone": "slate", "type": "hotkey", "keys": ["ESC"]},
+    {"id": "previous", "label": "이전 곡", "icon": "previous", "tone": "green", "type": "media", "key": "PREVIOUS"},
+    {"id": "play", "label": "재생 / 일시 정지", "icon": "play", "tone": "green", "type": "media", "key": "PLAY_PAUSE"},
+    {"id": "next", "label": "다음 곡", "icon": "next", "tone": "green", "type": "media", "key": "NEXT"},
+    {"id": "quieter", "label": "볼륨 낮추기", "icon": "volume-down", "tone": "green", "type": "media", "key": "VOLUME_DOWN"},
+    {"id": "mute", "label": "음소거", "icon": "mute", "tone": "green", "type": "media", "key": "MUTE"},
+    {"id": "louder", "label": "볼륨 높이기", "icon": "volume-up", "tone": "green", "type": "media", "key": "VOLUME_UP"},
+    {"id": "back", "label": "뒤로", "icon": "back", "tone": "slate", "type": "hotkey", "keys": ["ALT", "LEFT"]},
+    {"id": "fullscreen", "label": "전체 화면", "icon": "fullscreen", "tone": "violet", "type": "hotkey", "keys": ["F11"]},
+    {"id": "forward", "label": "앞으로", "icon": "forward", "tone": "slate", "type": "hotkey", "keys": ["ALT", "RIGHT"]},
+    {"id": "refresh", "label": "새로 고침", "icon": "refresh", "tone": "slate", "type": "hotkey", "keys": ["CTRL", "R"]},
+    {"id": "youtube", "label": "YouTube 열기", "icon": "video", "tone": "red", "type": "url", "url": "https://www.youtube.com/"}
+  ]
+}

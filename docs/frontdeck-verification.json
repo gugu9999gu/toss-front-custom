@@ -1,0 +1,32 @@
+{
+  "date_kst": "2026-10-09",
+  "unit_tests_passed": 11,
+  "javascript_syntax_checked": true,
+  "apk_signature_verified": [
+    "v2",
+    "v3"
+  ],
+  "browser_viewports": [
+    [
+      400,
+      640
+    ],
+    [
+      800,
+      1280
+    ]
+  ],
+  "android_qa": {
+    "sdk": 36,
+    "native_pairing": true,
+    "work_buttons": 12,
+    "media_buttons": 12,
+    "native_actions_dry_run": true,
+    "disconnect_disables_buttons": true,
+    "reconnect_enables_buttons": true,
+    "home_and_credentials_after_cold_launch": true
+  },
+  "physical_second_device_installed": false,
+  "physical_second_device_backed_up": false,
+  "actual_windows_actions_tested": false
+}

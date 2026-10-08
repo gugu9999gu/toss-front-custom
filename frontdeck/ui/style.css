@@ -1,0 +1,35 @@
+:root { color-scheme: dark; font-family: "Segoe UI", "Noto Sans KR", sans-serif; background: #101217; color: #edf0f5; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; }
+body { margin: 0; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; border: 0; }
+.deck { height: 100vh; height: 100dvh; max-width: 700px; margin: auto; padding: max(24px, env(safe-area-inset-top)) 22px max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.eyebrow { color: #7f8899; font-size: 10px; letter-spacing: .18em; font-weight: 700; }
+h1 { font-size: 28px; letter-spacing: -.04em; line-height: 1.1; margin: 6px 0 0; font-weight: 600; }
+.settings { width: 48px; height: 48px; padding: 13px; background: #1d212b; border-radius: 15px; }
+svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.connection { color: #8c96a8; font-size: 12px; display: flex; align-items: center; gap: 7px; margin-bottom: 18px; min-height: 18px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: #667085; }
+body.connected .dot { background: #70d9ac; box-shadow: 0 0 0 3px #70d9ac12; }
+#clock { margin-left: auto; font-variant-numeric: tabular-nums; }
+nav { display: flex; gap: 6px; padding: 4px; background: #191d25; border-radius: 14px; margin-bottom: 18px; }
+nav button { flex: 1; border-radius: 10px; background: transparent; height: 42px; font-size: 14px; color: #939cae; font-weight: 600; }
+nav button[aria-pressed=true] { background: #303746; color: #f5f6f9; box-shadow: 0 2px 5px #0002; }
+.buttons { min-height: 0; flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(9px, 2vh, 18px); background: #20252f; border: 1px solid #303846; border-radius: 18px; padding: 12px 6px; box-shadow: 0 2px 0 #0003; transition: transform 100ms ease, opacity 120ms ease; overflow: hidden; }
+.tile .icon { width: clamp(27px, 6vw, 44px); height: clamp(27px, 6vw, 44px); color: #afbcd2; }
+.tile .label { text-align: center; font-size: clamp(11px, 2.8vw, 18px); line-height: 1.35; font-weight: 600; letter-spacing: -.04em; word-break: keep-all; }
+.tile[data-tone=blue] { background: #1d2b43; border-color: #2b4264; }.tile[data-tone=blue] .icon { color: #8cbaff; }
+.tile[data-tone=violet] { background: #2b2540; border-color: #40365c; }.tile[data-tone=violet] .icon { color: #b8a2f2; }
+.tile[data-tone=green] { background: #1b332d; border-color: #284c41; }.tile[data-tone=green] .icon { color: #7cdcb1; }
+.tile[data-tone=red] { background: #38242a; border-color: #56343d; }.tile[data-tone=red] .icon { color: #f699a7; }
+.tile:active, .tile.pressed { transform: scale(.97); opacity: .8; }
+.tile:disabled { cursor: default; opacity: .48; }.tile:disabled:active { transform: none; }
+button:focus-visible { outline: 3px solid #9ac2ff; outline-offset: 3px; }
+footer { display: flex; align-items: center; gap: 8px; height: 42px; padding-top: 15px; color: #7f899c; }
+#feedback { flex: 1; min-width: 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mark { font-weight: 700; font-size: 15px; color: #434e61; letter-spacing: -.06em; }.mark span { color: #60708a; }
+@media (min-width: 550px) { .deck { padding: 36px 32px 22px; } h1 { font-size: 38px; }.connection { font-size: 15px; } nav button { height: 54px; font-size: 18px; }.buttons { gap: 14px; }.tile { border-radius: 23px; }.tile .icon { width: 48px; height: 48px; } footer { height: 55px; } #feedback { font-size: 14px; } }
+@media (max-height: 550px) { .deck { padding-top: 12px; padding-bottom: 8px; } header { margin-bottom: 8px; } h1 { font-size: 22px; }.eyebrow { display: none; }.connection { margin-bottom: 8px; } nav { margin-bottom: 8px; } nav button { height: 32px; }.buttons { gap: 6px; }.tile { gap: 5px; padding: 4px; border-radius: 12px; }.tile .icon { width: 22px; height: 22px; }.tile .label { font-size: 11px; } footer { height: 30px; padding-top: 8px; } }
+@media (hover: hover) and (pointer: fine) { .tile:hover:enabled { filter: brightness(1.13); }.settings:hover { background: #2b3240; } }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; }.tile:active, .tile.pressed { transform: none; } }
