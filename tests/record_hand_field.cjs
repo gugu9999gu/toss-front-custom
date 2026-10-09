@@ -8,6 +8,7 @@ let checks=0;const check=(condition,label)=>{checks++;assert.ok(condition,label)
   check(handPoints({active:true,points:[{x:NaN,y:.5}]}).length===0,'invalid hand coordinates are rejected');
   const points=handPoints({active:true,points:[{x:.2,y:.5,power:1},{x:.8,y:.5,power:1},{x:.5,y:.5,power:1}]});
   check(points.length===2,'at most two hand fields can affect geometry');
+  check(handPoints({active:true,points:[{x:0,y:1,power:.1}]})[0].power===.1,'fading full-screen fields preserve low power');
   const near=repel(.25,.5,points,1,1);check(near.x>0&&near.y===0,'particles on the right of a hand move away to the right');
   const left=repel(.15,.5,points,1,1);check(left.x<0,'particles on the left move away to the left');
   const far=repel(.5,.05,points,1,1);check(far.x===0&&far.y===0,'far particles stay fixed');
@@ -25,6 +26,8 @@ let checks=0;const check=(condition,label)=>{checks++;assert.ok(condition,label)
   check(JSON.stringify([camera.position.toArray(),camera.quaternion.toArray(),camera.projectionMatrix.toArray()])===pose,'particle deformation never changes camera position or projection');
   check(JSON.stringify([root.position.toArray(),root.rotation.toArray(),root.scale.toArray()])===rootPose,'particle deformation never translates, rotates, or scales the whole scene');
   field.restore();check(Array.from(geometry.attributes.position.array).every((x,i)=>x===original[i]),'removing the field restores exact unmodified geometry');
+  field.apply(root,camera,{...layout,span:.4,focus:.2},[points[0]],1);
+  check(Array.from(geometry.attributes.position.array).every((x,i)=>Math.abs(x-moved[i])<1e-6),'full-screen hand position stays aligned when the visualization area changes');field.restore();
   field.apply(root,camera,layout,[points[0]],1);field.restore();field.apply(root,camera,layout,[points[0]],1);
   check(Array.from(geometry.attributes.position.array).every((x,i)=>Math.abs(x-moved[i])<1e-6),'stationary hands cannot accumulate geometric drift');
   field.restore();geometry.attributes.position.array[1]=.1;field.apply(root,camera,layout,[points[0]],1);field.restore();

@@ -21,3 +21,5 @@ FrontRecord의 오프라인 3D 장면은 **Three.js 0.160.1**을 포함합니다
 - [의존성·모델 출처 안내](../record-android/assets/gesture/THIRD_PARTY_NOTICES.txt)
 
 Google AAR의 `third_party_licenses.json/txt`도 빌드 시 APK의 `gesture/licenses/`에 그대로 보존합니다. 입력 영상이나 손 관절 좌표를 파일·로그·서버에 보관하지 않습니다. 변환과 위치 추적에 쓰는 짧은 프레임 버퍼는 메모리에서만 사용하고, 카메라를 닫으면 해제합니다.
+
+1.9.8의 빠른 추적은 공식 [palm_detection_lite.tflite](https://storage.googleapis.com/mediapipe-assets/palm_detection_lite.tflite)와 [hand_landmark_lite.tflite](https://storage.googleapis.com/mediapipe-assets/hand_landmark_lite.tflite)를 사용합니다. 가중치와 텐서 입출력을 바꾸지 않고 표준 공식 묶음의 입력 정규화 메타데이터·라벨을 붙입니다. 입력 범위는 공식 [손 분석 그래프](https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/modules/hand_landmark/hand_landmark_cpu.pbtxt)의 0–1 변환과 일치합니다. 원본 모델·파생 모델·재현 가능한 task 묶음의 SHA-256을 고정하고 빌드 때 확인합니다. 표준 묶음도 오류 시 복귀용으로 APK에 함께 포함합니다. 메타데이터 빌드 도구 MediaPipe Python 0.10.14와 FlatBuffers 25.9.23은 PC에서만 사용하며 APK에는 포함하지 않습니다.

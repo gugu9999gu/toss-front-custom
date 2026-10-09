@@ -5,13 +5,13 @@
   "apks": {
     "record": {
       "package": "dev.tossfront.record",
-      "version": "1.7.0",
-      "bytes": 12413715,
-      "sha256": "a9df408ce9de319ccb8ccce99a39510b2016a126055c3bd5d7f99aa525e9aec3",
+      "version": "1.9.8",
+      "bytes": 15993705,
+      "sha256": "d072f63147a74732a3df4fc941dcfb5e02b7ca32e9368aac7867652a92953f67",
       "signature_verified": true,
       "same_signing_certificate_as_1_6": true,
-      "installed_hash_matches": null,
-      "installation_status": "pending_usb_access_denied"
+      "installed_hash_matches": true,
+      "installation_status": "installed_and_hash_verified"
     },
     "web": {
       "package": "local.tossfront.youtubeweb",
@@ -20,16 +20,31 @@
       "sha256": "39ba21a795e44b8332565119ad5b58b39189cfe6c176951239aa473bcb6768d2",
       "signature_verified": true,
       "installed_hash_matches": true,
-      "verification_scope": "Previously installed 2.3; unchanged in 1.7 update."
+      "verification_scope": "Previously installed 2.3; unchanged in the 1.7–1.9.8 updates."
     }
   },
   "live_youtube_source": "web",
   "checks": {
     "build_and_signature_verified": true,
-    "first_device_usb_interface_present": true,
-    "adb_usb_access_error": "Windows access denied (error 5)",
-    "version_1_7_installed": false,
-    "version_1_7_physical_gestures_verified": false
+    "installed_hash_matches": true,
+    "appearance_values_preserved": true,
+    "favorites_preserved": true,
+    "recent_ids_retained": true,
+    "timer_settings_preserved": true,
+    "camera_permission_granted": true,
+    "audio_permission_granted": true,
+    "notifications_permission_granted": true,
+    "listener_enabled": true,
+    "overlay_allowed": true,
+    "own_app_crash_found_since_install": false,
+    "hand_tracking_after_install_logged": false,
+    "record_has_no_internet_permission": true,
+    "physical_edge_release_previous_next_success": "unconfirmed",
+    "physical_two_hand_play_pause_stability": "unconfirmed",
+    "version_1_9_8_installed": true,
+    "camera_frames_analyzed_after_install": true,
+    "physical_full_screen_mapping_user_confirmed_on_1_9_4": true,
+    "physical_1_9_8_smoothness_user_confirmation": "pending"
   },
   "previous_version_live_checks": {
     "version": "1.2.0",
@@ -70,12 +85,16 @@
     "three_d_audio_rigs_filters_and_module_syntax": 37,
     "camera_and_actual_spatial_wave_geometry": 36,
     "stable_history_navigation": 11,
-    "camera_pixels_stride_rotation_and_color": 8,
-    "optical_hand_motion_between_landmark_results": 8,
+    "camera_pixels_stride_rotation_and_color": 14,
     "web_seek_and_dvr_ranges": 10,
-    "pinch_gestures_and_native_local_hand_field": 31,
-    "local_wave_particle_and_camera_independence": 21,
-    "total": 263
+    "pinch_gestures_and_native_local_hand_field": 51,
+    "local_wave_particle_and_camera_independence": 23,
+    "total": 345,
+    "model_only_hand_association_and_outlier_confirmation": 15,
+    "ephemeral_pinch_trail": 17,
+    "gesture_volume_playback_intents": 7,
+    "display_interpolation_persistence_and_stale_command_guard": 14,
+    "adaptive_hand_detection_schedule": 9
   },
   "isolated_chromium_render_checks": {
     "eleven_scenes_rendered": true,
@@ -85,7 +104,8 @@
     "pause_stops_continuous_frames_and_camera": true,
     "all_four_filters_render": true,
     "console_errors": 0,
-    "scope": "Desktop Chromium with synthetic audio and hand input; not device performance or recognition accuracy."
+    "scope": "Desktop Chromium with synthetic audio and hand input; not device performance or recognition accuracy.",
+    "version": "1.9.4"
   },
   "direct_scene_author": {
     "model": "claude-opus-5-5",
@@ -316,7 +336,7 @@
       "synthetic_hand_influence_changes_3d_pixels": true
     }
   },
-  "last_verified_installed_record_version": "1.6.0",
+  "last_verified_installed_record_version": "1.9.8",
   "previous_version_1_6_camera_tracking_sample": {
     "version": "1.6.0",
     "delegate": "GPU",
@@ -353,5 +373,155 @@
     "all_three_physical_gestures_user_confirmed": false,
     "development_clap_command_observed": true,
     "camera_frames_or_landmark_coordinates_saved": false
+  },
+  "previous_version_1_7_live_checks": {
+    "version": "1.7.0",
+    "installed_hash_matches": true,
+    "one_hand_gesture_success_user_reported": true,
+    "two_hand_gesture_stability_user_reported": false,
+    "offline_assertions": {
+      "motion_and_audio": 15,
+      "web_metadata_ads_sound_and_ended": 38,
+      "history_expiry_favorites_and_queue": 23,
+      "timer_sensitivity_and_vocal_bands": 25,
+      "three_d_audio_rigs_filters_and_module_syntax": 37,
+      "camera_and_actual_spatial_wave_geometry": 36,
+      "stable_history_navigation": 11,
+      "camera_pixels_stride_rotation_and_color": 8,
+      "optical_hand_motion_between_landmark_results": 8,
+      "web_seek_and_dvr_ranges": 10,
+      "pinch_gestures_and_native_local_hand_field": 31,
+      "local_wave_particle_and_camera_independence": 21,
+      "total": 263
+    }
+  },
+  "offline_assertion_scope": "150 gesture/geometry checks were rerun, including 6 new full-field fast-sampling assertions. 195 unchanged checks retain earlier results. Synthetic input is not physical hand-recognition accuracy.",
+  "release_feedback": {
+    "1.8.0": {
+      "installed_hash_matches": true,
+      "pinch_trail_visible_user_confirmed": true,
+      "two_hand_recognition_user_feedback": "still unstable"
+    },
+    "1.9.0": {
+      "installed_hash_matches": true,
+      "user_feedback": "hand outline intermittently disappears"
+    },
+    "1.9.1": {
+      "installed_hash_matches": true,
+      "user_feedback": "hand outline still flickers",
+      "gesture_volume_zero_pause_requests_logged": true,
+      "gesture_volume_raise_resume_requests_logged": true,
+      "actual_audible_pause_resume_user_confirmation": "unconfirmed"
+    },
+    "1.9.2": {
+      "installed_hash_matches": true,
+      "user_feedback": "hand outline jumps in unintended directions"
+    },
+    "1.9.3": {
+      "installed_hash_matches": true,
+      "user_feedback": "jumps and flicker reduced somewhat; some stutter remains; full-screen camera interaction requested"
+    },
+    "1.9.4": {
+      "installed_hash_matches": true,
+      "model_input_is_full_camera_frame": true,
+      "hand_overlay_uses_full_player_view": true,
+      "native_and_threejs_hand_fields_use_full_screen_coordinates": true,
+      "display_interpolates_at_animation_callbacks": true,
+      "image_patch_tracking_removed": true,
+      "large_pose_jump_requires_consistent_new_model_observations": true,
+      "render_frame_rate_guaranteed": false,
+      "user_feedback": "Full-screen mapping works; stutter remains."
+    },
+    "1.9.5": {
+      "installed_hash_matches": true,
+      "full_screen_software_raster_removed": true,
+      "user_feedback": "Stutter feels similar; playback/navigation buttons display normally."
+    },
+    "1.9.6": {
+      "installed_hash_matches": true,
+      "legacy_lite_missing_normalization_metadata": true,
+      "standard_model_fallback_observed": true
+    },
+    "1.9.7": {
+      "installed_hash_matches": true,
+      "lite_model_initializes_and_analyzes_frames": true,
+      "official_input_metadata_attached_without_changing_weights": true,
+      "physical_smoothness_user_confirmation": "unconfirmed"
+    },
+    "1.9.8": {
+      "installed_hash_matches": true,
+      "lite_model_and_full_field_2x2_sampling_default": true,
+      "standard_model_and_full_resolution_setting_available": true,
+      "physical_smoothness_user_confirmation": "pending"
+    }
+  },
+  "native_gpu_rendering_samples": {
+    "1.9.4": {
+      "version": "1.9.4",
+      "duration_seconds": 20,
+      "scope": "Live current point-sphere player; user hand activity is not controlled.",
+      "total_frames": 522,
+      "deadline_jank_frames": 436,
+      "deadline_jank_percent": 83.52,
+      "p50_ms": 38,
+      "p90_ms": 57,
+      "slow_ui_thread": 436,
+      "slow_bitmap_uploads": 407
+    },
+    "1.9.5": {
+      "version": "1.9.5",
+      "duration_seconds": 20,
+      "scope": "Live current point-sphere player; user hand activity is not controlled.",
+      "total_frames": 768,
+      "deadline_jank_frames": 328,
+      "deadline_jank_percent": 42.71,
+      "p50_ms": 24,
+      "p90_ms": 34,
+      "slow_ui_thread": 37,
+      "slow_bitmap_uploads": 0
+    },
+    "1.9.8": {
+      "version": "1.9.8",
+      "duration_seconds": 20,
+      "scope": "Live current point-sphere player; user hand activity is not controlled.",
+      "total_frames": 489,
+      "deadline_jank_frames": 327,
+      "deadline_jank_percent": 66.87,
+      "p50_ms": 26,
+      "p90_ms": 53,
+      "slow_ui_thread": 6,
+      "slow_bitmap_uploads": 1
+    },
+    "comparison_scope": "1.9.4 and 1.9.5 are short live point-sphere samples. The 1.9.8 sample starts after screen wake, so model startup and playback conditions differ. Not a controlled recognition or steady 60-fps benchmark."
+  },
+  "fast_hand_model": {
+    "sdk_version": "0.10.32",
+    "default": "official_lite_with_matching_official_normalization_metadata",
+    "source_camera_size": [
+      640,
+      480
+    ],
+    "fast_rgb_size_before_rotation": [
+      320,
+      240
+    ],
+    "keeps_full_field_of_view": true,
+    "averages_2x2_luminance_blocks": true,
+    "standard_quality_switch": true,
+    "initialization_and_inference_failure_fallback": true,
+    "original_tensor_weights_verified_unchanged": true,
+    "derived_bundle_hash_verified": true,
+    "live_no_hand_model_updates_hz_range": [
+      8.3,
+      8.8
+    ],
+    "measurement_scope": "Short steady-state heartbeats, no detected hands; not hand-recognition accuracy or screen fps.",
+    "standard_no_hand_updates_hz_about": 5.8,
+    "inference_time_ms_range": [
+      77,
+      80
+    ],
+    "screen_off_camera_stop_and_screen_on_restart_implemented": true,
+    "physical_accuracy_and_smoothness_user_confirmation": "pending"
   }
 }

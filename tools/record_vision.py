@@ -47,4 +47,32 @@ def prepare(build, assets):
                 for name in archive.namelist():
                     if name.startswith('jni/arm64-v8a/') and name.endswith('.so'):
                         native.append(('lib/' + name[4:], archive.read(name)))
+    for bundle in lock.get('model_bundles', []):
+        filename = bundle['file']
+        if Path(filename).name != filename or not filename.endswith('.task'):
+            raise ValueError('Invalid model bundle filename')
+        reference_name = bundle.get('metadata_source')
+        if reference_name and Path(reference_name).name != reference_name:
+            raise ValueError('Invalid metadata reference filename')
+        folder = assets / 'gesture'
+        folder.mkdir(exist_ok=True)
+        target = folder / filename
+        with zipfile.ZipFile(target, 'w', compression=zipfile.ZIP_STORED) as archive:
+            for name, source in bundle['models'].items():
+                if Path(name).name != name or Path(source).name != source:
+                    raise ValueError('Invalid model bundle entry')
+                data = (cache / source).read_bytes()
+                if data[4:8] != b'TFL3':
+                    raise ValueError('Invalid TFLite model')
+                if bundle.get('metadata_source'):
+                    from record_vision_models import lite_with_metadata
+                    with zipfile.ZipFile(cache / bundle['metadata_source']) as reference:
+                        data = lite_with_metadata(data, reference.read(name))
+                    if hashlib.sha256(data).hexdigest() != bundle['models_sha256'][name]:
+                        raise RuntimeError('Derived lite model integrity mismatch: ' + name)
+                entry = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+                entry.external_attr = 0o644 << 16
+                archive.writestr(entry, data)
+        if hashlib.sha256(target.read_bytes()).hexdigest() != bundle['sha256']:
+            raise RuntimeError('Model bundle integrity mismatch: ' + filename)
     return jars, native

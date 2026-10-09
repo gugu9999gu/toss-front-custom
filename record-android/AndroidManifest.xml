@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tossfront.record" android:versionCode="8" android:versionName="1.7.0">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tossfront.record" android:versionCode="18" android:versionName="1.9.8">
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="33" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -13,7 +13,7 @@
         <package android:name="local.tossfront.youtubeweb" />
         <package android:name="dev.tossfront.audio" />
     </queries>
-    <application android:hardwareAccelerated="false" android:label="레코드 플레이어" android:icon="@drawable/ic_record" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:debuggable="false">
+    <application android:hardwareAccelerated="true" android:label="레코드 플레이어" android:icon="@drawable/ic_record" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:debuggable="false">
         <activity android:hardwareAccelerated="true" android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>

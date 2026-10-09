@@ -5,10 +5,18 @@ final class CameraPixels {
     static int width(int w,int h,int rotation){return rotation==90||rotation==270?h:w;}
     static int height(int w,int h,int rotation){return rotation==90||rotation==270?w:h;}
     static void convert(int w,int h,byte[] y,int ys,int yp,byte[] u,int us,int up,byte[] v,int vs,int vp,int rotation,boolean mirror,byte[] out){
-        int ow=width(w,h,rotation);
+        convert(w,h,y,ys,yp,u,us,up,v,vs,vp,rotation,mirror,1,out);
+    }
+    static void convert(int sourceWidth,int sourceHeight,byte[] y,int ys,int yp,byte[] u,int us,int up,byte[] v,int vs,int vp,int rotation,boolean mirror,int step,byte[] out){
+        if((step!=1&&step!=2)||sourceWidth%step!=0||sourceHeight%step!=0)throw new IllegalArgumentException("Invalid camera sampling size");
+        int w=sourceWidth/step,h=sourceHeight/step,ow=width(w,h,rotation);
+        if(out.length!=w*h*4)throw new IllegalArgumentException("Invalid camera output buffer");
         for(int row=0;row<h;row++)for(int col=0;col<w;col++){
-            int yy=Math.max(0,(y[row*ys+col*yp]&255)-16)*298;
-            int uu=(u[row/2*us+col/2*up]&255)-128,vv=(v[row/2*vs+col/2*vp]&255)-128;
+            int sourceRow=row*step,sourceCol=col*step,at=sourceRow*ys+sourceCol*yp;
+            int luminance=y[at]&255;
+            if(step==2)luminance=(luminance+(y[at+yp]&255)+(y[at+ys]&255)+(y[at+ys+yp]&255)+2)/4;
+            int yy=Math.max(0,luminance-16)*298;
+            int uu=(u[sourceRow/2*us+sourceCol/2*up]&255)-128,vv=(v[sourceRow/2*vs+sourceCol/2*vp]&255)-128;
             int dx=col,dy=row;
             if(rotation==90){dx=h-1-row;dy=col;}else if(rotation==180){dx=w-1-col;dy=h-1-row;}else if(rotation==270){dx=row;dy=w-1-col;}
             if(mirror)dx=ow-1-dx;

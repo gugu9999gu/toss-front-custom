@@ -7,7 +7,7 @@ final class GestureInfluence {
     void update(HandGestureCore.Output o){
         int next=Math.min(2,o.hands);
         for(int i=0;i<next;i++){
-            float x=.14f+.72f*o.xs[i],y=.1f+.8f*o.ys[i];
+            float x=o.xs[i],y=o.ys[i];
             if(i>=count){xs[i]=x;ys[i]=y;powers[i]=o.powers[i];}
             else{xs[i]+=(x-xs[i])*.5f;ys[i]+=(y-ys[i])*.5f;powers[i]+=(o.powers[i]-powers[i])*.5f;}
         }

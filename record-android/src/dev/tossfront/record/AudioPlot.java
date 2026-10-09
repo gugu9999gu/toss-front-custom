@@ -50,7 +50,7 @@ final class AudioPlot extends View {
     }
     private float dp(float value){return value*getResources().getDisplayMetrics().density;}
     private float w(int i){return Math.signum(wave[i])*ResponseMath.display(Math.abs(wave[i]));}
-    private void field(float x,float y,float energy){audio.gesture.displace(x/Math.max(1,getWidth()),y/Math.max(1,getHeight()),energy,getWidth()/(float)Math.max(1,getHeight()));}
+    private void field(float x,float y,float energy){float screenHeight=getParent() instanceof View?Math.max(1,((View)getParent()).getHeight()):Math.max(1,getHeight());audio.gesture.displace(x/Math.max(1,getWidth()),(getTop()+y)/screenHeight,energy,getWidth()/screenHeight);audio.gesture.dy*=screenHeight/Math.max(1,getHeight());}
     private float waveY(int i,float cy,float amplitude){float x=dp(8)+(getWidth()-dp(16))*i/(wave.length-1),y=cy-w(i)*amplitude;field(x,y,Math.abs(w(i)));return y+audio.gesture.dy*getHeight();}
     private void drawWave(Canvas c){float left=dp(8),span=getWidth()-left*2,cy=getHeight()*.5f,amplitude=getHeight()*.29f;path.reset();path.moveTo(left,waveY(0,cy,amplitude));
         for(int i=1;i<wave.length;i++){float x=left+span*i/(wave.length-1),prev=left+span*(i-1)/(wave.length-1);path.quadTo(prev,waveY(i-1,cy,amplitude),(prev+x)/2,(waveY(i-1,cy,amplitude)+waveY(i,cy,amplitude))*.5f);}path.lineTo(left+span,waveY(wave.length-1,cy,amplitude));c.drawPath(path,p);

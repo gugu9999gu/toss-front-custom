@@ -1,0 +1,3 @@
+# Build-time metadata tooling; never packaged into the Android application.
+mediapipe==0.10.14
+flatbuffers==25.9.23

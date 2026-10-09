@@ -89,6 +89,31 @@
       "file": "hand_landmarker.task",
       "url": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
       "sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1"
+    },
+    {
+      "file": "palm_detection_lite.tflite",
+      "url": "https://storage.googleapis.com/mediapipe-assets/palm_detection_lite.tflite",
+      "sha256": "e9a4aaddf90dda56a87235303cf00e4c2d3fb28725f68fd88772997dac905c18"
+    },
+    {
+      "file": "hand_landmark_lite.tflite",
+      "url": "https://storage.googleapis.com/mediapipe-assets/hand_landmark_lite.tflite",
+      "sha256": "d7fde8ac11f8ce03f8663775bfc323f4fc9f2a38062b4f4efa142874ef5b2a48"
+    }
+  ],
+  "model_bundles": [
+    {
+      "file": "hand_landmarker_lite.task",
+      "models": {
+        "hand_detector.tflite": "palm_detection_lite.tflite",
+        "hand_landmarks_detector.tflite": "hand_landmark_lite.tflite"
+      },
+      "sha256": "4b2c12e0bfc04f341b38616090f9134e40d590cf5ab1a80ca10c92dcfdd49bfb",
+      "metadata_source": "hand_landmarker.task",
+      "models_sha256": {
+        "hand_detector.tflite": "53fc1e5f539e9d81f8c582822b811465637276db9e6e03cefad16b2edd1d93dd",
+        "hand_landmarks_detector.tflite": "e8505d9e8f19a156bfb8180f0f8183a3c7defa4e6053605047aa12f01ff03c8c"
+      }
     }
   ]
 }
