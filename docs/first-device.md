@@ -22,7 +22,9 @@ Play 스토어의 기기 인증 확인도 실패했지만 이것이 YouTube 오�
 
 ## Bluetooth
 
-Bluetooth/LE 기능 선언, A2DP 송신 설정, Bluetooth ON 및 A2dpService·AVRCP 서비스 실행을 확인했습니다. 실제 스피커는 연결하지 않았습니다.
+2026-10-08에는 Bluetooth/LE 기능 선언, A2DP 송신 설정, Bluetooth ON 및 A2dpService·AVRCP 서비스 실행을 확인했습니다.
+
+2026-10-09에는 연결된 Bluetooth A2DP 스피커를 확인하고 직접 제작한 [FrontAudio · 오디오 출력](frontaudio.md)을 설치했습니다. 앱에서 내장 스피커와 Bluetooth 간 미디어 출력 경로를 바꾸고 실제 AudioTrack 경로를 확인했습니다. 사용자가 두 장치 모두 테스트 소리가 들린다고 확인했습니다. 새 기기 페어링 절차 자체는 이번 자동화 시험에 포함하지 않았습니다.
 
 ## 공개 기록의 범위
 

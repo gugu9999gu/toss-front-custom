@@ -52,5 +52,9 @@
   "bluetooth_speaker_pairing_tested": false,
   "full_backup_bytes": 31977373696,
   "full_backup_luns": 6,
-  "full_restore_write_tested": false
+  "full_restore_write_tested": false,
+  "bluetooth_speaker_connection_verified": true,
+  "bluetooth_speaker_audible_verified": true,
+  "frontaudio_installed": true,
+  "frontaudio_verified_date_kst": "2026-10-09"
 }

@@ -1,0 +1,47 @@
+{
+  "package": "dev.tossfront.audio",
+  "availableTypes": [
+    2,
+    8
+  ],
+  "routes": [
+    {
+      "type": 2,
+      "actualRouteMatches": true,
+      "volumeUnchanged": true
+    },
+    {
+      "type": 8,
+      "actualRouteMatches": true,
+      "volumeUnchanged": true
+    }
+  ],
+  "unauthenticatedRequestRejected": true,
+  "missingDeviceRejected": true,
+  "unknownActionRejected": true,
+  "rejectionsPreserveRoute": true,
+  "automaticSelectionRestored": true,
+  "originalPreferenceRestored": true,
+  "verifiedDateKst": "2026-10-09",
+  "model": "toss_front2",
+  "androidVersion": "13",
+  "installed": true,
+  "apkSha256": "ffb41da7e2b603dc676035afc26b83cb24b05e57ce80cbcd3506bf18aba3010c",
+  "apkBytes": 25131,
+  "apkSignatureVerified": true,
+  "uiSelectionTested": true,
+  "audioTrackRoutedTypes": [
+    8,
+    2
+  ],
+  "userConfirmedAudibleOnBoth": true,
+  "appRestartPreservesRoute": true,
+  "bluetoothSettingsOpened": true,
+  "bridgeParentPid": 1,
+  "bridgeTokenFileMode": "600",
+  "crashFound": false,
+  "pcDisconnectPhysicallyTested": false,
+  "deviceRebootTested": false,
+  "restartBridgeAfterDeviceRebootRequired": true,
+  "externalUsbWiredHdmiTested": false
+}
