@@ -13,20 +13,20 @@ export class AudioCamera {
     const left=clamp(f.onsetLeft,0,1.5),right=clamp(f.onsetRight,0,1.5);
     let orbit=0,truck=0,lift=0,dolly=1,roll=0,focusX=0,focusY=0;
     if(mode===0){ // Chase camera: bank, suspension lift and an onset-driven push forward.
-      orbit=wave*.11*amp;truck=balance*.22*amp;lift=bass*.12;
+      orbit=(wave*.2+balance*hit*.08)*amp;truck=balance*.3*amp;lift=bass*.16+hit*.05;
       dolly=1-hit*.15-bass*.035;roll=-wave*.055*amp;
     }else if(mode===1){ // Duel: arc around both fighters and bias framing toward the current strike.
-      orbit=(Math.sin(phase*.07)*.25+wave*.07)*amp;
-      truck=balance*.18*amp;lift=bass*.12;dolly=1-hit*.12;
-      focusX=(right-left)*.22;roll=wave*hit*.035;
+      orbit=(Math.sin(phase*.11)*.38+wave*.1+balance*hit*.08)*amp;
+      truck=balance*.18*amp;lift=bass*.12;dolly=1-hit*.16;
+      focusX=(right-left)*.3;roll=(right-left)*hit*.035;
     }else if(mode===2){
-      orbit=Math.sin(phase*.08)*.42*amp;truck=wave*.16*amp;
+      orbit=Math.sin(phase*.12)*.5*amp;truck=wave*.16*amp;
       lift=(clamp(f.high,0,4.2)/4.2)*.24;dolly=1-bass*.09-hit*.05;
       roll=wave*.045*amp;focusY=bass*.08;
     }else if(mode===3){ // Keep every musician inside the open ensemble framing.
-      orbit=(Math.sin(phase*.055)*.23+balance*.035)*amp;
+      orbit=(Math.sin(phase*.075)*.27+balance*.06)*amp;
       truck=balance*.14*amp;lift=bass*.14;dolly=1-hit*.06;
-      focusX=balance*.15*amp;
+      focusX=balance*.22*amp;focusY=hit*.08;
     }else{
       orbit=Math.sin(phase*.065)*.28*amp;lift=bass*.14;
       dolly=1-hit*.07;roll=wave*.02*amp;

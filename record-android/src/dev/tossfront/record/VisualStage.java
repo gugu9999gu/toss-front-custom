@@ -19,5 +19,6 @@ final class VisualStage extends FrameLayout {
     }
     void update(boolean value,Bitmap art){playing=value;vinyl.update(playing&&mode==0,art);plot.update(playing&&mode>0&&mode<7);if(scene!=null)scene.update(playing&&mode>=7);}
     void refresh(){vinyl.refreshMotionPolicy();}
+    void gestureChanged(){GestureInfluence g=audio.gesture;if(mode==0){float scale=g.active?Math.max(.8f,Math.min(1.2f,g.spread)):1;vinyl.setScaleX(scale);vinyl.setScaleY(scale);vinyl.setTranslationX(g.active?(g.x-.5f)*getWidth()*.1f:0);}else if(mode<7)plot.invalidate();else if(scene!=null)scene.gestureChanged();}
     String analysisStatus(){if(mode==0||!playing)return "";if(mode>=7&&scene!=null&&!scene.status().isEmpty())return scene.status();return audio.status();}
 }

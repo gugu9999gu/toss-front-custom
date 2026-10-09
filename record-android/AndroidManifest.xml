@@ -1,10 +1,12 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tossfront.record" android:versionCode="6" android:versionName="1.5.0">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tossfront.record" android:versionCode="7" android:versionName="1.6.0">
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="33" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <queries>
@@ -18,7 +20,7 @@
         <service android:name=".SessionListener" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
         </service>
-        <service android:name=".RecordOverlay" android:exported="false" />
+        <service android:name=".RecordOverlay" android:exported="false" android:foregroundServiceType="camera" />
         <service android:name=".TimerStopService" android:exported="false" />
         <receiver android:name=".TimerReceiver" android:exported="false">
             <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.TIME_SET" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" /></intent-filter>

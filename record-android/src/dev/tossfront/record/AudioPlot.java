@@ -23,8 +23,9 @@ final class AudioPlot extends View {
     private long last,sequence=-1;
     private float phase;
     private final Runnable frame=new Runnable(){public void run(){scheduled=false;if(!active()){releaseAudio();last=0;return;}long now=SystemClock.uptimeMillis();float dt=last==0?16:Math.min(64,now-last);last=now;float max=0;
-        for(int i=0;i<wave.length;i++){float target=playing?ResponseMath.signed(audio.data.waveform[i],appearance.gain()):0;wave[i]+=(target-wave[i])*(1-(float)Math.exp(-dt/60));max=Math.max(max,Math.abs(wave[i]));}
-        for(int i=0;i<bands.length;i++){float target=playing?ResponseMath.band(audio.data.bands[i],appearance.gain()):0;float tau=target>bands[i]?60:appearance.reduced?400:160;bands[i]+=(target-bands[i])*(1-(float)Math.exp(-dt/tau));max=Math.max(max,bands[i]);}
+        float handGain=audio.gesture.active?audio.gesture.strength:1;
+        for(int i=0;i<wave.length;i++){float target=playing?ResponseMath.signed(audio.data.waveform[i],appearance.gain()*handGain):0;wave[i]+=(target-wave[i])*(1-(float)Math.exp(-dt/60));max=Math.max(max,Math.abs(wave[i]));}
+        for(int i=0;i<bands.length;i++){float target=playing?ResponseMath.band(audio.data.bands[i],appearance.gain()*handGain):0;float tau=target>bands[i]?60:appearance.reduced?400:160;bands[i]+=(target-bands[i])*(1-(float)Math.exp(-dt/tau));max=Math.max(max,bands[i]);}
         if(playing&&audio.connected()&&audio.data.sequence!=sequence){sequence=audio.data.sequence;System.arraycopy(history[1],0,history[2],0,64);System.arraycopy(history[0],0,history[1],0,64);System.arraycopy(bands,0,history[0],0,64);}
         if(playing&&appearance.motion()&&audio.data.peak>.01f)phase=(phase+dt*(float)(Math.PI*2/60000))%(float)(Math.PI*2);
         invalidate();if(playing&&audio.connected()||max>.002f)schedule();
@@ -43,7 +44,9 @@ final class AudioPlot extends View {
     private void updateTint(){if(appearance!=null){int[] colors=appearance.visualColors();tintColor=colors[0];tint=new LinearGradient(0,0,Math.max(1,getWidth()),Math.max(1,getHeight()),colors,null,Shader.TileMode.CLAMP);}}
     @Override protected void onSizeChanged(int w,int h,int ow,int oh){super.onSizeChanged(w,h,ow,oh);updateTint();}
     @Override protected void onDraw(Canvas c){if(appearance==null)return;p.setColor(tintColor);p.setShader(tint);p.setAlpha(255);p.setStrokeWidth(dp(2));p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);p.setStyle(Paint.Style.STROKE);
+        c.save();GestureInfluence g=audio.gesture;if(g.active){c.translate((g.x-.5f)*getWidth()*.14f,(g.y-.5f)*getHeight()*.1f);c.scale(g.spread,g.spread,getWidth()/2f,getHeight()/2f);}
         if(appearance.mode==1)drawWave(c);else if(appearance.mode==2)drawSpectrum(c);else if(appearance.mode==3)drawRing(c);else if(appearance.mode==4)drawSphere(c);else if(appearance.mode==5)drawAurora(c);else drawOrbit(c);
+        c.restore();if(appearance.theme==4){p.setShader(null);p.setColor(0xff0f380f);p.setAlpha(16);p.setStrokeWidth(1);for(int y=0;y<getHeight();y+=6)c.drawLine(0,y,getWidth(),y,p);p.setAlpha(255);}
     }
     private float dp(float value){return value*getResources().getDisplayMetrics().density;}
     private float w(int i){return Math.signum(wave[i])*ResponseMath.display(Math.abs(wave[i]));}

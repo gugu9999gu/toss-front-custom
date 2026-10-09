@@ -1,0 +1,27 @@
+FrontRecord camera dependencies
+
+MediaPipe Tasks Vision / Core 0.10.32, Google AI Edge
+https://github.com/google-ai-edge/mediapipe
+Apache License 2.0: MEDIAPIPE-LICENSE.txt
+
+Official Hand Landmarker float16 model bundle, revision 1
+https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker
+
+AndroidX Annotation; Guava / failureaccess / listenablefuture;
+Flogger / system backend; Google DataTransport / Firebase Encoders;
+javax.inject. Their pinned versions and official artifact URLs are in
+record-android/vision-dependencies.json in the source repository.
+Apache License 2.0 text is included in MEDIAPIPE-LICENSE.txt.
+Google AAR third-party notices are copied unchanged into gesture/licenses/.
+
+Protobuf Java Lite 4.26.1
+https://github.com/protocolbuffers/protobuf/tree/v26.1
+BSD license text: PROTOBUF-LICENSE.txt
+
+Checker compatibility annotations 2.5.3
+https://github.com/typetools/checker-framework/tree/checker-framework-2.5.3
+Full upstream licensing notice: CHECKER-FRAMEWORK-LICENSE.txt
+
+Third-party artifacts and the model are fetched from official hosts with
+SHA-256 verification at build time; camera input is processed on device.

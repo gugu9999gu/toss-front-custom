@@ -1,4 +1,4 @@
-// Directly authored by Claude Opus 5.5 at the user's request; reviewed for this app.
+// Initial rigs by Claude Opus 5.5 at the user's request; contact, defense and beat accents refined by this project.
 import * as T from './three.module.min.js';
 import {clamp} from './audio-motion.js';
 const PI=Math.PI;
@@ -99,7 +99,7 @@ export function createFighting(ctx){
     const arms=[-1,1].map(o=>{
       const sh=ctx.group(sp,o*.25,.46,0);ctx.gradient(sh,G.l,0,-.16,0);
       const el=ctx.group(sh,0,-.32,0);ctx.gradient(el,G.l,0,-.16,0);
-      ctx.neutral(el,G.f,0xf4efe8,0,-.34,0).scale.set(1,1.1,1.25);
+      ctx.neutral(el,G.f,sd<0?0xff8a53:0x69cfff,0,-.34,0).scale.set(1.25,1.35,1.5);
       return {sh,el,side:o};
     });
     const legs=[-1,1].map(o=>{
@@ -116,16 +116,20 @@ export function createFighting(ctx){
     const lead=clamp(.5+.5*s.h,0,1);
     R.arms.forEach((m,i)=>{
       const k=i?lead:1-lead,o=m.side;
-      m.sh.rotation.set(-.5-s.p*k,-o*s.y*k,o*.12);
-      m.el.rotation.x=-2.05+s.e*k;
+      m.sh.rotation.set(-.5-s.p*k-s.rc*.32,-o*s.y*k,o*(.12+s.rc*.12));
+      m.el.rotation.x=-2.05+s.e*k-s.rc*.28;
     });
     R.legs[0].hp.rotation.x=.25-s.kh;R.legs[0].kn.rotation.x=.25+s.kk;
     R.legs[1].hp.rotation.x=-.25+s.kh*.25;R.legs[1].kn.rotation.x=.25;
     R.r.position.x=R.sd*(1.05-s.ad*.55+s.rc*.25);
     R.hip.position.y=.95+w*.015-s.kh*.05;
-    R.sp.rotation.set(s.p*.12+s.ad*.15-s.rc*.35,s.y*.3,0);
+    R.sp.rotation.set(s.p*.2+s.ad*.25-s.rc*.5,s.y*.5,s.rc*R.sd*.1);
   };
   const F=[rig(-1),rig(1)],E=[env(),env()],tg={},off={live:false};
+  const glow=new T.Mesh(new T.RingGeometry(.07,.14,20),new T.MeshBasicMaterial({color:0xffe0a0,transparent:true,opacity:0,depthWrite:false,side:T.DoubleSide}));glow.position.set(0,1.25,.35);root.add(glow);
+  const sparks=Array.from({length:12},(_,i)=>{const m=new T.Mesh(new T.OctahedronGeometry(.035,0),new T.MeshBasicMaterial({color:i%2?0xffddb4:0xff8a53}));m.visible=false;root.add(m);return m;});
+  let contact=0,previousA=0,previousB=0,impactSide=0;
+
   return (f,dt,moving)=>{
     dt=Math.min(dt||0,.1);
     const ok=!!(f&&f.live&&moving),q=f||{};
@@ -133,6 +137,10 @@ export function createFighting(ctx){
     fighterTargets(ok?q:off,a,b,tg);
     pose(F[0],tg.leftArm,tg.leftKick,tg.leftAdvance,b,ok?ctx.wavePoint(3):0,dt);
     pose(F[1],tg.rightArm,tg.rightKick,tg.rightAdvance,a,ok?ctx.wavePoint(11):0,dt);
-    ctx.look(0,1.4,7.4,0,1.05,0);
+    if(ok&&((a>.32&&previousA<=.32)||(b>.32&&previousB<=.32))){contact=Math.min(1.5,Math.max(a,b));impactSide=a>b?1:-1;glow.position.set(impactSide*.22,1.05+(q.centroid||0)*.5,.3);}
+    previousA=a;previousB=b;contact=ok?contact*Math.exp(-dt/0.14):0;
+    glow.material.opacity=Math.min(.85,contact);glow.scale.setScalar(1+(1-Math.min(1,contact))*3);
+    for(let i=0;i<sparks.length;i++){const m=sparks[i];m.visible=contact>.035;const angle=i*PI*2/sparks.length,r=(1-Math.min(1,contact))*.6;m.position.set(glow.position.x+Math.cos(angle)*r,glow.position.y+Math.sin(angle)*r,.35+i*.012);m.scale.setScalar(contact);}
+    const hit=ok?Math.max(a,b):0;ctx.look(impactSide*hit*.08,1.4+hit*.08,7.4-hit*.28,0,1.05+hit*.025,0);
   };
 }

@@ -30,8 +30,8 @@ def main():
     configurations = {
         "deck": ("FrontDeck", "dev.tossfront.deck", "frontdeck", "android", "android", "1.0.0", "24"),
         "audio": ("FrontAudio", "dev.tossfront.audio", "frontaudio", "audio-android", "audio", "1.0.0", "26"),
-        "record": ("FrontRecord", "dev.tossfront.record", "frontrecord", "record-android", "record", "1.5.0", "26"),
-        "youtubeweb": ("YouTube-Web", "local.tossfront.youtubeweb", "youtubeweb", "youtube-web-android", "youtubeweb", "2.2", "26"),
+        "record": ("FrontRecord", "dev.tossfront.record", "frontrecord", "record-android", "record", "1.6.0", "26"),
+        "youtubeweb": ("YouTube-Web", "local.tossfront.youtubeweb", "youtubeweb", "youtube-web-android", "youtubeweb", "2.3", "26"),
     }
     name, package, alias, source_name, build_name, version, minimum = configurations[args.app]
     source = ROOT / source_name
@@ -50,15 +50,26 @@ def main():
             if item.is_file(): shutil.copy2(item, assets / item.name)
     if (source / "assets").is_dir():
         shutil.copytree(source / "assets", assets, dirs_exist_ok=True)
-    run(["javac", "--release", "8", "-encoding", "UTF-8", "-classpath", android, "-d", classes, *source.rglob("*.java")])
+    dependencies, native = [], []
+    if args.app == "record":
+        from record_vision import prepare
+        dependencies, native = prepare(build, assets)
+    classpath = os.pathsep.join(str(p) for p in [android, *dependencies])
+    run(["javac", "--release", "8", "-encoding", "UTF-8", "-classpath", classpath, "-d", classes, *source.rglob("*.java")])
     jar = build / "classes.jar"
     with zipfile.ZipFile(jar, "w") as archive:
         for item in classes.rglob("*.class"): archive.write(item, item.relative_to(classes).as_posix())
-    run(["java", "-cp", tools / "lib/d8.jar", "com.android.tools.r8.D8", "--min-api", minimum, "--lib", android, "--output", build, jar])
+    for dex in build.glob("classes*.dex"):
+        if not dex.resolve().is_relative_to(build.resolve()):
+            raise RuntimeError("DEX cleanup target resolves outside its build directory")
+        dex.unlink()
+    run(["java", "-cp", tools / "lib/d8.jar", "com.android.tools.r8.D8", "--min-api", minimum, "--lib", android, "--output", build, jar, *dependencies])
     suffix = ".exe" if os.name == "nt" else ""
     unsigned, aligned = build / "unsigned.apk", build / "aligned.apk"
     run([tools / ("aapt" + suffix), "package", "-f", "-M", source / "AndroidManifest.xml", "-S", source / "res", "-A", assets, "-I", android, "-F", unsigned])
-    with zipfile.ZipFile(unsigned, "a", compression=zipfile.ZIP_DEFLATED) as apk: apk.write(build / "classes.dex", "classes.dex")
+    with zipfile.ZipFile(unsigned, "a", compression=zipfile.ZIP_DEFLATED) as apk:
+        for dex in build.glob('classes*.dex'): apk.write(dex, dex.name)
+        for filename, data in native: apk.writestr(filename, data)
     run([tools / ("zipalign" + suffix), "-f", "4", unsigned, aligned])
     keystore, password = build / (alias + ".keystore"), build / "keystore-password.txt"
     if keystore.exists() != password.exists(): raise RuntimeError("Restore both signing files together before building")

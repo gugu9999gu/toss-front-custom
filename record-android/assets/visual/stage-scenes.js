@@ -1,4 +1,4 @@
-// Directly authored by Claude Opus 5.5 at the user's request; reviewed for this app.
+// Initial animal and dancer rigs by Claude Opus 5.5; concert staging and beat accents refined by this project.
 import * as T from './three.module.min.js';
 import {clamp} from './audio-motion.js';
 const E=(o,x,y,z,k)=>{const r=o.rotation;r.x+=(x-r.x)*k;r.y+=(y-r.y)*k;r.z+=(z-r.z)*k;};
@@ -129,19 +129,37 @@ export function createOrchestra(ctx){
  ctx.neutral(pn,box(.8,.03,.14),0xf8f8f4,0,.8,-.1);
  const keys=[];
  for(let j=0;j<5;j++)keys.push(ctx.neutral(pn,box(.05,.02,.08),0x111111,-.32+j*.16,.82,-.12));
- ctx.look(0,1.7,7.8,0,1,0);
+ const floor=ctx.neutral(ctx.root,new T.CircleGeometry(6.8,48),0x1b1c24,0,-.045,-.8);floor.rotation.x=-Math.PI/2;
+ const ensemble=[ow,fr,de,li,pe],back=[];
+ for(let i=0;i<4;i++){
+  const animal=player(ctx,(i-1.5)*1.75,-2.5);ctx.neutral(animal.head,sph(.17),i%2?0xa47c5a:0x737986,0,.07,0);
+  for(const side of[-1,1])ctx.neutral(animal.head,new T.ConeGeometry(.06,.12,5),0x535964,side*.12,.22,0).rotation.z=-side*.3;
+  const body=ctx.neutral(animal.b,sph(.13),0x85512f,0,.95,.27);body.scale.set(.7,1.5,.4);
+  ctx.neutral(animal.Rt.hand,cyl(.007,.007,.65,4),0xe3c9a5,0,0,0).rotation.z=1.57;back.push(animal);ensemble.push(animal);
+ }
+ const stands=[];
+ for(const musician of ensemble.slice(1)){
+  const x=musician.g.position.x,z=musician.g.position.z+.55,stand=ctx.group(ctx.root,x+.3,0,z);
+  ctx.neutral(stand,cyl(.012,.015,.75,5),0x4b4d53,0,.37,0);const paper=ctx.neutral(stand,box(.32,.2,.022),0xded8c3,0,.85,0);paper.rotation.x=-.25;stands.push(stand);
+ }
+ const lights=[];
+ for(let i=0;i<4;i++){
+  const beam=ctx.neutral(ctx.root,new T.ConeGeometry(.9,5,12,1,true),i%2?0xaac8ff:0xffd99d,(i-1.5)*1.7,3,-1.6);
+  beam.rotation.z=(i-1.5)*.09;beam.material.dispose();beam.material=new T.MeshBasicMaterial({color:i%2?0xaac8ff:0xffd99d,transparent:true,opacity:.025,depthWrite:false,side:T.DoubleSide});lights.push(beam);
+ }
+ ctx.look(0,2.3,10.1,0,1,-.8);
  return(f,dt,moving)=>{
   if(!f)return;
-  const a=live(f,moving),k=1-Math.exp(-dt*10),w=i=>wv(ctx,i)*a;
+  const a=live(f,moving),k=1-Math.exp(-dt*14),w=i=>wv(ctx,i)*a,pulse=clamp(f.boost||0,0,1.5)*a;
   const lo=band(ctx,0,2)*a,mid=band(ctx,5,9)*a,hi=band(ctx,10,15)*a,en=clamp(f.energy/3,0,1)*a;
-  E(ow.Rt.sh,-.9-w(3)*.35-en*.4,0,.2+f.waveBalance*.35*a,k);E(ow.Rt.el,-.4-w(9)*.45,0,w(14)*.2,k);
+  E(ow.Rt.sh,-.9-w(3)*.5-en*.55-pulse*.3,0,.2+f.waveBalance*.35*a,k);E(ow.Rt.el,-.4-w(9)*.65-pulse*.22,0,w(14)*.2,k);
   E(ow.L.sh,-.5-en*.7,0,-.3-lo*.15,k);E(ow.L.el,-.6+w(20)*.3,0,0,k);
   E(ow.head,(f.centroid-.5)*.4*a,f.balance*.4*a,w(6)*.05,k);E(ow.b,-en*.12,0,f.waveBalance*.05*a,k);
   E(fr.L.sh,-1.2,0,-.3,k);E(fr.L.el,-.6+w(5)*.08,0,0,k);
-  E(fr.Rt.sh,-.9-hi*.12,0,-.45-w(12)*.35,k);E(fr.Rt.el,-1.1+w(13)*.5,0,0,k);
+  E(fr.Rt.sh,-.9-hi*.12,0,-.45-w(12)*.52,k);E(fr.Rt.el,-1.1+w(13)*.5,0,0,k);
   E(fr.head,.1,0,.35+hi*.06,k);E(fr.b,0,0,w(10)*.04,k);
   E(de.L.sh,-.55,0,.25,k);E(de.L.el,-1.1,0,w(4)*.12,k);
-  E(de.Rt.sh,-.6,0,-.35-w(2)*.4-lo*.1,k);E(de.Rt.el,-.9+w(1)*.3,0,0,k);
+  E(de.Rt.sh,-.6,0,-.35-w(2)*.58-lo*.14,k);E(de.Rt.el,-.9+w(1)*.3,0,0,k);
   E(de.head,lo*.08,0,-.15,k);E(de.b,-lo*.04,0,w(0)*.03,k);
   E(li.L.sh,-1.25,0,.3,k);E(li.L.el,-1.25,0,0,k);E(li.Rt.sh,-1.25-mid*.05,0,-.3,k);E(li.Rt.el,-1.25,0,0,k);
   E(li.head,-mid*.12-w(8)*.04,0,0,k);E(li.b,-mid*.04,0,w(11)*.03,k);
@@ -150,5 +168,9 @@ export function createOrchestra(ctx){
   E(pe.Rt.sh,-1.05-Math.max(0,w(19))*.15,0,-.2+w(22)*.1,k);E(pe.Rt.el,-.35,0,0,k);
   E(pe.b,-lo*.05,0,w(15)*.04,k);
   for(let j=0;j<5;j++){const m=keys[j];m.position.y+=(.82-band(ctx,j*3,j*3+2)*.012*a-m.position.y)*k;}
+  for(let i=0;i<back.length;i++){const m=back[i],energy=band(ctx,i*3,i*3+3)*a;E(m.L.sh,-1.05,0,-.2,k);E(m.L.el,-.7,0,0,k);E(m.Rt.sh,-.85-energy*.1,0,-.4-w(i*5+2)*.5,k);E(m.Rt.el,-1+w(i*6+4)*.5,0,0,k);E(m.b,-energy*.025,0,w(i*4)*.06,k);}
+  for(let i=0;i<lights.length;i++){const m=lights[i];m.material.opacity=.025+a*(.012+band(ctx,i*4,i*4+3)*.018+pulse*.025);m.rotation.z=(i-1.5)*.09+w(i*7)*.035;}
+  const focus=clamp((f.high-f.bass)/4.2,-1,1)*a;ctx.look(focus*.2,2.3+pulse*.1,10.1-pulse*.22,0,1,-.8);
+
  };
 }

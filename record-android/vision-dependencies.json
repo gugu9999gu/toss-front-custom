@@ -1,0 +1,94 @@
+{
+  "artifacts": [
+    {
+      "file": "tasks-vision-0.10.32.aar",
+      "url": "https://dl.google.com/dl/android/maven2/com/google/mediapipe/tasks-vision/0.10.32/tasks-vision-0.10.32.aar",
+      "sha256": "d6e69475707d07a24478e9ff00c437c48c9a834ffb04d4e6e0ba907defa87777"
+    },
+    {
+      "file": "tasks-core-0.10.32.aar",
+      "url": "https://dl.google.com/dl/android/maven2/com/google/mediapipe/tasks-core/0.10.32/tasks-core-0.10.32.aar",
+      "sha256": "8265164d7c72f131b90497bfc06579242ca388d4481190c7fbd5aa797a1d4637"
+    },
+    {
+      "file": "annotation-1.1.0.jar",
+      "url": "https://dl.google.com/dl/android/maven2/androidx/annotation/annotation/1.1.0/annotation-1.1.0.jar",
+      "sha256": "d38d63edb30f1467818d50aaf05f8a692dea8b31392a049bfa991b159ad5b692"
+    },
+    {
+      "file": "guava-27.0.1-android.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/guava/guava/27.0.1-android/guava-27.0.1-android.jar",
+      "sha256": "caf0955aed29a1e6d149f85cfb625a89161b5cf88e0e246552b7ffa358204e28"
+    },
+    {
+      "file": "failureaccess-1.0.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar",
+      "sha256": "a171ee4c734dd2da837e4b16be9df4661afab72a41adaf31eb84dfdaf936ca26"
+    },
+    {
+      "file": "listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar",
+      "sha256": "b372a037d4230aa57fbeffdef30fd6123f9c0c2db85d0aced00c91b974f33f99"
+    },
+    {
+      "file": "flogger-0.6.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/flogger/flogger/0.6/flogger-0.6.jar",
+      "sha256": "3145669db60c7b1d63b4e1f7137ea1a5de6ea91c516a68e8cfdd25794d81b7c4"
+    },
+    {
+      "file": "flogger-system-backend-0.6.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/flogger/flogger-system-backend/0.6/flogger-system-backend-0.6.jar",
+      "sha256": "af7f9f049c79f67941e1e47637b20634594788398aa0aabcddbc7af0af3df5b1"
+    },
+    {
+      "file": "protobuf-javalite-4.26.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/protobuf/protobuf-javalite/4.26.1/protobuf-javalite-4.26.1.jar",
+      "sha256": "ae83d2b063988c4565462845269472ddc817117506b6e467a2c3222c96636829"
+    },
+    {
+      "file": "transport-api-3.0.0.aar",
+      "url": "https://dl.google.com/dl/android/maven2/com/google/android/datatransport/transport-api/3.0.0/transport-api-3.0.0.aar",
+      "sha256": "4e6983c0703b357df6f1c6ceacb1b5dfc2c5006a789c799fec2298b2b5337466"
+    },
+    {
+      "file": "transport-backend-cct-3.1.0.aar",
+      "url": "https://dl.google.com/dl/android/maven2/com/google/android/datatransport/transport-backend-cct/3.1.0/transport-backend-cct-3.1.0.aar",
+      "sha256": "c9b5f5502415554c1ca85459e4cc8a192e7ab847413e57a8a8414816604b591d"
+    },
+    {
+      "file": "transport-runtime-3.1.0.aar",
+      "url": "https://dl.google.com/dl/android/maven2/com/google/android/datatransport/transport-runtime/3.1.0/transport-runtime-3.1.0.aar",
+      "sha256": "e59241ae50d87adaa0cadef228f336aaa2b0013f08c2416e38a4c3b93e6f398c"
+    },
+    {
+      "file": "firebase-encoders-17.0.0.jar",
+      "url": "https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-encoders/17.0.0/firebase-encoders-17.0.0.jar",
+      "sha256": "282a5a703f9b7eb56508dde97ea918e95d73318b157050f457f7a86dca750150"
+    },
+    {
+      "file": "firebase-encoders-json-18.0.0.aar",
+      "url": "https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-encoders-json/18.0.0/firebase-encoders-json-18.0.0.aar",
+      "sha256": "80aece7e1ef58957ca2fc1957bc9208ec92a3a9528201331d3c63e3182570f97"
+    },
+    {
+      "file": "firebase-encoders-proto-16.0.0.jar",
+      "url": "https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-encoders-proto/16.0.0/firebase-encoders-proto-16.0.0.jar",
+      "sha256": "293db96a0d1d43f033167881b638d8fde844e4e5495f5101cf52295765295e0e"
+    },
+    {
+      "file": "javax.inject-1.jar",
+      "url": "https://repo.maven.apache.org/maven2/javax/inject/javax.inject/1/javax.inject-1.jar",
+      "sha256": "91c77044a50c481636c32d916fd89c9118a72195390452c81065080f957de7ff"
+    },
+    {
+      "file": "checker-compat-qual-2.5.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-compat-qual/2.5.3/checker-compat-qual-2.5.3.jar",
+      "sha256": "d76b9afea61c7c082908023f0cbc1427fab9abd2df915c8b8a3e7a509bccbc6d"
+    },
+    {
+      "file": "hand_landmarker.task",
+      "url": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+      "sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1"
+    }
+  ]
+}

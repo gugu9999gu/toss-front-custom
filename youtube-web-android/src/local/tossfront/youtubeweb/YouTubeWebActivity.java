@@ -51,7 +51,7 @@ public final class YouTubeWebActivity extends Activity {
         session.setCallback(new MediaSession.Callback(){
             @Override public void onPlay(){control("v.muted=false;if(v.volume===0)v.volume=1;v.play().catch(function(){})");if(youtubePage())browser.evaluateJavascript(WebProbe.unmute(),null);}
             @Override public void onPause(){control("v.pause()");}
-            @Override public void onSeekTo(long position){control("if(Number.isFinite(v.duration))v.currentTime=Math.max(0,Math.min(v.duration,"+(position/1000.0)+"))");}
+            @Override public void onSeekTo(long position){seek(position);}
             @Override public void onSkipToNext(){navigate(true);}
             @Override public void onSkipToPrevious(){navigate(false);}
             @Override public void onCustomAction(String action,Bundle extras){if("frontrecord.play_id".equals(action)&&extras!=null){String id=extras.getString("video_id");if(validVideoId(id)){requestedAudioId=id;unmuteAttempts=5;browser.loadUrl("https://m.youtube.com/watch?v="+id);}}else if("frontrecord.repeat_one".equals(action)&&!lastAd)control("v.currentTime=0;v.play().catch(function(){})");}
@@ -72,6 +72,7 @@ public final class YouTubeWebActivity extends Activity {
     @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused)applyRecordUi();}
     private boolean youtubePage(){String url=browser.getUrl();if(url==null)return false;Uri uri=Uri.parse(url);return "https".equals(uri.getScheme())&&("m.youtube.com".equals(uri.getHost())||"www.youtube.com".equals(uri.getHost()));}
     private void control(String command){if(!youtubePage())return;browser.evaluateJavascript("(function(){const v=document.querySelector('video');if(v){"+command+";}return true;})()",r->readPlayer());}
+    private void seek(long position){if(!youtubePage()||lastAd)return;browser.evaluateJavascript(WebProbe.seek(position),raw->{try{Object decoded=new JSONTokener(raw).nextValue();if(!(decoded instanceof String))return;JSONObject value=new JSONObject((String)decoded);Bundle result=new Bundle();result.putLong("request_ms",position);result.putBoolean("ok",value.optBoolean("ok"));result.putLong("target_ms",(long)(value.optDouble("target")*1000));result.putBoolean("clamped",value.optBoolean("clamped"));session.sendSessionEvent("frontrecord.seek_result",result);android.util.Log.i("FrontRecordWeb",value.optBoolean("ok")?"seek_requested_"+value.optString("method"):"seek_unavailable");readPlayer();}catch(JSONException ignored){}});}
     private void navigate(boolean next){if(youtubePage())browser.evaluateJavascript(WebProbe.navigate(next),r->readPlayer());}
     private void readPlayer(){
         if(!youtubePage()){session.setActive(false);return;}

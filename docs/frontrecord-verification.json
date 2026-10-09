@@ -5,45 +5,50 @@
   "apks": {
     "record": {
       "package": "dev.tossfront.record",
-      "version": "1.5.0",
-      "bytes": 263436,
-      "sha256": "806ecc450d060df5bf3a4f939eb4730fdeffeb6a85f27914a241857bf7379635",
+      "version": "1.6.0",
+      "bytes": 12413642,
+      "sha256": "b48b8bb2f22da1cfc15e54e37a427503f9fb755898c6e485daec0623799ed8fb",
       "signature_verified": true,
       "installed_hash_matches": true
     },
     "web": {
       "package": "local.tossfront.youtubeweb",
-      "version": "2.2",
+      "version": "2.3",
       "bytes": 20954,
-      "sha256": "cc32c7c9c1191f6b5c28edb7f44643e7c0659361db180b1cd2135aae5850f8f3",
+      "sha256": "39ba21a795e44b8332565119ad5b58b39189cfe6c176951239aa473bcb6768d2",
       "signature_verified": true,
       "installed_hash_matches": true
     }
   },
   "live_youtube_source": "web",
   "checks": {
-    "playing_state_after_navigation": 3,
-    "bundled_webgl_ready": true,
-    "audio_camera_motion_detected": true,
-    "nine_game_stage_and_new_wave_scenes_displayed": true,
-    "nine_scenes_change_with_actual_music": true,
-    "eighteen_modes_available": true,
-    "previous_and_next_controls_visible": true,
-    "previous_button_changes_to_previous_history_video": true,
-    "next_button_returns_to_original_video": true,
-    "original_video_playing_after_checks": true,
-    "original_appearance_preferences_preserved": true,
-    "original_visualization_restored": true,
-    "library_survives_update": true,
+    "live_finite_duration_dvr_seek_changes_to_selected_position": true,
+    "selected_seek_position_persists_over_twenty_seconds": true,
+    "current_video_playing_after_checks": true,
+    "camera_permission_granted": true,
+    "physical_front_camera_selected": true,
+    "logical_multicamera_excluded_when_physical_front_available": true,
+    "camera_active_after_checks": true,
+    "hand_tracking_after_final_install_logged": true,
+    "hand_tracking_display_user_confirmed_during_development": true,
+    "three_activity_overlay_handoffs_without_new_eviction": true,
+    "same_app_process_after_handoffs": true,
+    "camera_settings_and_two_physical_choices_visible": true,
+    "five_gesture_setting_toggles_visible": true,
+    "gameboy_theme_selected_in_settings_and_native_wave_displayed": true,
+    "theme_restored_after_check": true,
+    "user_visualization_unchanged_during_final_ui_check": true,
+    "favorites_and_recent_records_retained": true,
     "history_cleanup_job_registered": true,
     "listener_enabled": true,
     "overlay_permission_allowed": true,
     "permissions": {
       "RECORD_AUDIO": true,
       "MODIFY_AUDIO_SETTINGS": true,
-      "POST_NOTIFICATIONS": true
+      "POST_NOTIFICATIONS": true,
+      "CAMERA": true
     },
-    "own_app_crash_found": false,
+    "own_app_java_or_native_crash_found_since_final_install": false,
     "official_app_connection_removed": true,
     "record_has_no_internet_permission": true
   },
@@ -84,9 +89,13 @@
     "history_expiry_favorites_and_queue": 23,
     "timer_sensitivity_and_vocal_bands": 25,
     "three_d_audio_rigs_filters_and_module_syntax": 37,
-    "total": 185,
+    "total": 233,
     "camera_and_actual_spatial_wave_geometry": 36,
-    "stable_history_navigation": 11
+    "stable_history_navigation": 11,
+    "temporal_hand_gestures": 22,
+    "camera_pixels_stride_rotation_and_color": 8,
+    "optical_hand_motion_between_landmark_results": 8,
+    "web_seek_and_dvr_ranges": 10
   },
   "isolated_chromium_render_checks": {
     "eleven_scenes_rendered": true,
@@ -94,7 +103,9 @@
     "camera_off_keeps_neutral_view": true,
     "pause_stops_frames_and_camera": true,
     "all_filters_change_new_waveform_pixels": true,
-    "console_errors": 0
+    "console_errors": 0,
+    "gameboy_four_color_render": true,
+    "synthetic_hand_influence_changes_3d_pixels": true
   },
   "direct_scene_author": {
     "model": "claude-opus-5-5",
@@ -131,7 +142,12 @@
     "natural_end_stop_timer_live_verified": false,
     "native_screen_capture_consistently_matches_physical_display": false,
     "filters_apply_to_native_seven_modes": false,
-    "history_navigation_restores_original_playhead": false
+    "history_navigation_restores_original_playhead": false,
+    "physical_index_circle_volume_live_verified": false,
+    "physical_clap_playback_live_verified_on_final_build": false,
+    "physical_double_right_flick_live_verified": false,
+    "all_live_stream_seek_variants_verified": false,
+    "stable_sixty_hz_camera_tracking_claimed": false
   },
   "previous_version_1_4_live_checks": {
     "version": "1.4.0",
@@ -170,11 +186,113 @@
     }
   },
   "new_project_modules": {
-    "version": "1.5.0",
+    "version": "1.6.0",
     "modules": [
+      "CameraGesture.java",
+      "CameraPixels.java",
+      "HandGestureCore.java",
+      "HandMotionTracker.java",
+      "HandOverlay.java",
+      "GestureInfluence.java"
+    ],
+    "previous_version_1_5_modules": [
       "camera-motion.js",
       "wave-scenes.js",
       "HistoryQueue.java"
     ]
+  },
+  "previous_version_1_5_live_checks": {
+    "version": "1.5.0",
+    "apks": {
+      "record": {
+        "package": "dev.tossfront.record",
+        "version": "1.5.0",
+        "bytes": 263436,
+        "sha256": "806ecc450d060df5bf3a4f939eb4730fdeffeb6a85f27914a241857bf7379635",
+        "signature_verified": true,
+        "installed_hash_matches": true
+      },
+      "web": {
+        "package": "local.tossfront.youtubeweb",
+        "version": "2.2",
+        "bytes": 20954,
+        "sha256": "cc32c7c9c1191f6b5c28edb7f44643e7c0659361db180b1cd2135aae5850f8f3",
+        "signature_verified": true,
+        "installed_hash_matches": true
+      }
+    },
+    "checks": {
+      "playing_state_after_navigation": 3,
+      "bundled_webgl_ready": true,
+      "audio_camera_motion_detected": true,
+      "nine_game_stage_and_new_wave_scenes_displayed": true,
+      "nine_scenes_change_with_actual_music": true,
+      "eighteen_modes_available": true,
+      "previous_and_next_controls_visible": true,
+      "previous_button_changes_to_previous_history_video": true,
+      "next_button_returns_to_original_video": true,
+      "original_video_playing_after_checks": true,
+      "original_appearance_preferences_preserved": true,
+      "original_visualization_restored": true,
+      "library_survives_update": true,
+      "history_cleanup_job_registered": true,
+      "listener_enabled": true,
+      "overlay_permission_allowed": true,
+      "permissions": {
+        "RECORD_AUDIO": true,
+        "MODIFY_AUDIO_SETTINGS": true,
+        "POST_NOTIFICATIONS": true
+      },
+      "own_app_crash_found": false,
+      "official_app_connection_removed": true,
+      "record_has_no_internet_permission": true
+    },
+    "isolated_chromium_render_checks": {
+      "eleven_scenes_rendered": true,
+      "four_game_stage_cameras_change_actual_view": true,
+      "camera_off_keeps_neutral_view": true,
+      "pause_stops_frames_and_camera": true,
+      "all_filters_change_new_waveform_pixels": true,
+      "console_errors": 0,
+      "gameboy_four_color_render": true,
+      "synthetic_hand_influence_changes_3d_pixels": true
+    }
+  },
+  "camera_tracking_sample": {
+    "version": "1.6.0",
+    "delegate": "GPU",
+    "cpu_fallback_available": true,
+    "sample_scope": "Five short steady-state heartbeats on the first device, native ring mode. Not a recognition-accuracy or screen-rendering benchmark.",
+    "input_and_tracking_update_hz": [
+      13.9,
+      14.1,
+      14.7,
+      14.4,
+      13.9
+    ],
+    "landmark_inference_hz": [
+      6.7,
+      6.2,
+      6.8,
+      6.8,
+      6.2
+    ],
+    "camera_frame_conversion_ms": [
+      13.0,
+      13.0,
+      13.0,
+      11.0,
+      13.0
+    ],
+    "landmark_inference_ms": [
+      100.0,
+      109.0,
+      98.0,
+      101.0,
+      107.0
+    ],
+    "all_three_physical_gestures_user_confirmed": false,
+    "development_clap_command_observed": true,
+    "camera_frames_or_landmark_coordinates_saved": false
   }
 }

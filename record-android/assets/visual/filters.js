@@ -1,4 +1,4 @@
-// Directly authored by Claude Opus 5.5 at the user's request; reviewed for this app.
+// Initial filters authored by Claude Opus 5.5; the project added the Game Boy pass.
 import * as T from './three.module.min.js';
 
 const MAX_SIZE = 8192;
@@ -17,6 +17,7 @@ void main() {
 const FS = `uniform sampler2D tSrc;
 uniform vec2 uRatio;
 uniform float uDither;
+uniform float uRetro;
 varying vec2 vUv;
 float b2(vec2 p) { return mod(2.0 * p.x + 3.0 * p.y, 4.0); }
 void main() {
@@ -29,6 +30,14 @@ void main() {
     vec3 c = clamp(gl_FragColor.rgb, 0.0, 1.0);
     gl_FragColor.rgb = min(floor(c * 5.0 + t), 5.0) / 5.0;
   }
+  if (uRetro > 0.5) {
+    vec2 p=floor(gl_FragCoord.xy*uRatio);
+    float threshold=(4.0*b2(mod(p,2.0))+b2(mod(floor(p*.5),2.0))+.5)/16.0;
+    float l=dot(gl_FragColor.rgb,vec3(.2126,.7152,.0722));
+    float level=clamp(floor(l*3.0+threshold),0.0,3.0);
+    vec3 c=level<.5?vec3(.0588,.2196,.0588):level<1.5?vec3(.1882,.3843,.1882):level<2.5?vec3(.5451,.6745,.0588):vec3(.6078,.7373,.0588);
+    gl_FragColor.rgb=c;
+  }
 }`;
 
 export class SceneFilter {
@@ -36,6 +45,7 @@ export class SceneFilter {
     this.w = size(width);
     this.h = size(height);
     this.mode = 0;
+    this.retro = false;
     this.disposed = false;
     this.viewport = new T.Vector4();
     this.target = new T.WebGLRenderTarget(this.w, this.h, {
@@ -51,7 +61,8 @@ export class SceneFilter {
       uniforms: {
         tSrc: { value: this.target.texture },
         uRatio: { value: new T.Vector2(1, 1) },
-        uDither: { value: 0 }
+        uDither: { value: 0 },
+        uRetro: { value: 0 }
       },
       vertexShader: VS,
       fragmentShader: FS,
@@ -72,13 +83,14 @@ export class SceneFilter {
   }
 
   _sync() {
-    const pixel = this.mode >= 2;
+    const pixel = this.mode >= 2 || this.retro;
     const tw = pixel ? Math.max(1, Math.round(this.w / CELL)) : this.w;
     const th = pixel ? Math.max(1, Math.round(this.h / CELL)) : this.h;
     if (this.target.width !== tw || this.target.height !== th) this.target.setSize(tw, th);
     const u = this.material.uniforms;
     u.uRatio.value.set(tw / this.w, th / this.h);
     u.uDither.value = this.mode === 1 || this.mode === 3 ? 1 : 0;
+    u.uRetro.value = this.retro ? 1 : 0;
   }
 
   setMode(mode) {
@@ -90,18 +102,19 @@ export class SceneFilter {
     if (m === 0) this.target.dispose();
     else this._sync();
   }
+  setRetro(value){this._live();if(this.retro===!!value)return;this.retro=!!value;this._sync();}
 
   resize(width, height) {
     this._live();
     this.w = size(width);
     this.h = size(height);
-    if (this.mode !== 0) this._sync();
+    if (this.mode !== 0 || this.retro) this._sync();
   }
 
   render(renderer, scene, camera) {
     this._live();
     if (!renderer || !scene || !camera) throw new TypeError('SceneFilter.render needs renderer, scene, camera');
-    if (this.mode === 0) {
+    if (this.mode === 0 && !this.retro) {
       renderer.render(scene, camera);
       return;
     }

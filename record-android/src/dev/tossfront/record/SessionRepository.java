@@ -30,11 +30,12 @@ public final class SessionRepository {
     private boolean historyNavigating;
     private String pendingId="";
     private long navigationAt;
+    private long pendingSeek=-1,requestedSeek,seekAt,seekMessageUntil;private int seekConfirmed;private String seekMessage="";
     private final MediaController.Callback callback = new MediaController.Callback() {
         @Override public void onMetadataChanged(MediaMetadata value) { metadata = value; track(); notifyObservers(); }
-        @Override public void onPlaybackStateChanged(PlaybackState value) { playback = value; track(); notifyObservers(); }
+        @Override public void onPlaybackStateChanged(PlaybackState value) { playback = value; reconcileSeek(); track(); notifyObservers(); }
         @Override public void onSessionDestroyed() { detach(); connect(); }
-        @Override public void onSessionEvent(String event,Bundle extras){if("frontrecord.content_ended".equals(event)&&extras!=null){String id=extras.getString("video_id");if(id!=null&&id.equals(videoId())&&gate.update(id,false,true,advertisement(),SystemClock.elapsedRealtime()))handleEnd(id);}}
+        @Override public void onSessionEvent(String event,Bundle extras){if("frontrecord.seek_result".equals(event)&&extras!=null&&pendingSeek>=0&&extras.getLong("request_ms",-1)==requestedSeek){if(extras.getBoolean("ok")){pendingSeek=extras.getLong("target_ms",pendingSeek);if(extras.getBoolean("clamped")){seekMessage="재생 가능한 구간으로 이동합니다";seekMessageUntil=SystemClock.elapsedRealtime()+4500;}}else{pendingSeek=-1;seekMessage="이 구간으로 이동하지 못했어요";seekMessageUntil=SystemClock.elapsedRealtime()+4500;}notifyObservers();return;}if("frontrecord.content_ended".equals(event)&&extras!=null){String id=extras.getString("video_id");if(id!=null&&id.equals(videoId())&&gate.update(id,false,true,advertisement(),SystemClock.elapsedRealtime()))handleEnd(id);}}
     };
 
     private SessionRepository(Context context) {
@@ -114,7 +115,7 @@ public final class SessionRepository {
     String videoId(){return metadata==null?"":metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID);}
     boolean advertisement(){return metadata!=null&&metadata.getLong("frontrecord.is_ad")==1;}
     private void track(){String id=videoId();if(!LibraryCore.valid(id))return;long now=SystemClock.elapsedRealtime();if(!pendingId.isEmpty()&&now-navigationAt>8000){pendingId="";gate.reset();}if(now-navigationAt<1500||!pendingId.isEmpty()&&!pendingId.equals(id))return;if(pendingId.equals(id)&&playing()&&!advertisement())pendingId="";
-        if(!id.equals(observedId)){if(!id.equals(historyTarget)){historyQueue.clear();historyNavigating=false;}observedId=id;historyTarget="";}
+        if(!id.equals(observedId)){pendingSeek=-1;if(!id.equals(historyTarget)){historyQueue.clear();historyNavigating=false;}observedId=id;historyTarget="";}
         boolean ended=gate.update(id,playing(),playback!=null&&playback.getState()==PlaybackState.STATE_STOPPED,advertisement(),now);
         if(playing()&&!advertisement()&&gate.recordable(now)&&!"YouTube".equals(title()))library.played(id,title(),duration());
         if(ended)handleEnd(id);
@@ -123,6 +124,7 @@ public final class SessionRepository {
     static String formatTimer(long ms){long seconds=(Math.max(0,ms)+999)/1000;return String.format(java.util.Locale.ROOT,"%d:%02d",seconds/60,seconds%60);}
     public long duration() { return metadata == null ? 0 : Math.max(0, metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)); }
     public long position() {
+        reconcileSeek();if(pendingSeek>=0)return pendingSeek;
         if (playback == null) return 0;
         long value = Math.max(0, playback.getPosition());
         if (playing() && playback.getLastPositionUpdateTime() > 0) value += (long)((SystemClock.elapsedRealtime() - playback.getLastPositionUpdateTime()) * playback.getPlaybackSpeed());
@@ -135,7 +137,10 @@ public final class SessionRepository {
         else if (!playing() && supports(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PLAY_PAUSE)) controller.getTransportControls().play();
     }
     public void pause(){if(controller!=null&&supports(PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_PLAY_PAUSE))controller.getTransportControls().pause();}
-    public void seek(long position) { if (supports(PlaybackState.ACTION_SEEK_TO)) controller.getTransportControls().seekTo(Math.max(0, position)); }
+    public void seek(long position) { if (supports(PlaybackState.ACTION_SEEK_TO)&&!advertisement()){pendingSeek=requestedSeek=Math.max(0,Math.min(duration(),position));seekAt=SystemClock.elapsedRealtime();seekConfirmed=0;seekMessage="";controller.getTransportControls().seekTo(pendingSeek);notifyObservers();} }
+    private void reconcileSeek(){if(pendingSeek<0)return;long now=SystemClock.elapsedRealtime();if(now-seekAt>6000){pendingSeek=-1;seekMessage="이동이 완료되지 않았어요 · 다시 시도해 주세요";seekMessageUntil=now+4500;}else if(playback!=null&&!buffering()&&now-seekAt>600&&Math.abs(playback.getPosition()-pendingSeek)<5000){if(++seekConfirmed>=2)pendingSeek=-1;}else seekConfirmed=0;}
+    String seekStatus(){if(pendingSeek>=0)return seekMessage.isEmpty()?"선택한 구간으로 이동 중":seekMessage;return SystemClock.elapsedRealtime()<seekMessageUntil?seekMessage:"";}
+
     public void next(){navigate(1);}
     public void previous(){navigate(-1);}
     private long skipAction(int direction){return direction>0?PlaybackState.ACTION_SKIP_TO_NEXT:PlaybackState.ACTION_SKIP_TO_PREVIOUS;}
@@ -143,7 +148,7 @@ public final class SessionRepository {
     boolean canSkip(int direction){if(!connected()||advertisement()||!pendingId.isEmpty())return false;if(library.loop!=2&&supports(skipAction(direction)))return true;String id=skipTarget(direction);return id!=null&&!id.equals(videoId());}
     private void navigate(int direction){if(!canSkip(direction))return;String id=skipTarget(direction);boolean queued=historyNavigating&&id!=null&&!id.equals(videoId());if(library.loop!=2&&!queued&&supports(skipAction(direction))){historyQueue.clear();historyTarget="";historyNavigating=false;if(direction>0)controller.getTransportControls().skipToNext();else controller.getTransportControls().skipToPrevious();}else playVideo(id,library.loop!=2);}
     void playVideo(String id){playVideo(id,false);}
-    private void playVideo(String id,boolean keepHistoryQueue){if(!LibraryCore.valid(id))return;if(!keepHistoryQueue)historyQueue.clear();historyNavigating=keepHistoryQueue;historyTarget=keepHistoryQueue?id:"";pendingId=id;navigationAt=SystemClock.elapsedRealtime();gate.reset();if(controller!=null){Bundle value=new Bundle();value.putString("video_id",id);custom("frontrecord.play_id",value);}else{Intent intent=webIntent(true);if(intent!=null)context.startActivity(intent.putExtra("play_video_id",id));}}
+    private void playVideo(String id,boolean keepHistoryQueue){if(!LibraryCore.valid(id))return;pendingSeek=-1;if(!keepHistoryQueue)historyQueue.clear();historyNavigating=keepHistoryQueue;historyTarget=keepHistoryQueue?id:"";pendingId=id;navigationAt=SystemClock.elapsedRealtime();gate.reset();if(controller!=null){Bundle value=new Bundle();value.putString("video_id",id);custom("frontrecord.play_id",value);}else{Intent intent=webIntent(true);if(intent!=null)context.startActivity(intent.putExtra("play_video_id",id));}}
     private void custom(String action,Bundle data){if(controller!=null)controller.getTransportControls().sendCustomAction(action,data);}
     int loopMode(){return library.loop;}
     void cycleLoop(){int next=library.loop+1;if(next==2&&library.core.favorites.isEmpty())next=0;if(next>2)next=0;library.loop(next);notifyObservers();}

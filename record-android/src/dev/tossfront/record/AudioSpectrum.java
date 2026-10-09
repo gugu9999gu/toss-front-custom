@@ -12,6 +12,7 @@ final class AudioSpectrum {
     private final Context context;
     private Visualizer visualizer;
     final SpectrumData data = new SpectrumData();
+    final GestureInfluence gesture=new GestureInfluence();
     private boolean failed, signalReported;
     private long started,lastSignal,retryAt;
     private int failures,silentRetries;
