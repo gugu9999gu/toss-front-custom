@@ -56,5 +56,18 @@
   "bluetooth_speaker_connection_verified": true,
   "bluetooth_speaker_audible_verified": true,
   "frontaudio_installed": true,
-  "frontaudio_verified_date_kst": "2026-10-09"
+  "frontaudio_verified_date_kst": "2026-10-09",
+  "home_shortcuts": [
+    "dev.tossfront.audio",
+    "com.android.settings",
+    "com.android.documentsui",
+    "com.android.calculator2"
+  ],
+  "home_shortcuts_verified_date_kst": "2026-10-09",
+  "home_shortcut_launch_verified": [
+    "dev.tossfront.audio",
+    "com.android.calculator2"
+  ],
+  "app_drawer_verified": true,
+  "three_button_navigation_visible": true
 }

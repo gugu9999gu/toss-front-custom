@@ -10,6 +10,14 @@ Android 13, ARM64, Toss Front 2에서 원본 UFS 6개 영역을 별도로 읽고
 
 ![PC 연결을 끊은 최종 홈 화면](images/first-device-final.png)
 
+## Android 홈 화면
+
+2026-10-09에는 기본 Launcher3 홈에 오디오 출력·설정·파일·계산기 바로가기를 배치했습니다. 오디오 출력과 계산기는 홈 아이콘을 눌러 실행되는 것을 확인했고, 런처를 종료했다 다시 열어도 아이콘이 표시됐습니다. 기본 HOME은 `com.android.launcher3/.uioverrides.QuickstepLauncher`, 내비게이션은 뒤로·홈·최근 앱의 3버튼 방식입니다. `minicat_launcher_enabled=0`도 확인했습니다.
+
+하단 원형 버튼을 누르면 홈으로 돌아갑니다. 홈에서 아래쪽을 위로 쓸어 올리면 전체 앱 목록이 열립니다. 이번 변경 후 기기 재부팅은 진행하지 않았습니다.
+
+![앱 바로가기를 배치한 Android 홈 화면](images/first-device-home.png)
+
 ## 공식 YouTube의 남은 문제
 
 YouTube 21.39.524, Google 서비스 프레임워크 13, Play 서비스 26.37.37, Play 스토어 53.4.34를 사용자가 직접 다운로드했으며 Google APK 서명과 파일 해시를 확인해 설치했습니다.
