@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tossfront.record" android:versionCode="3" android:versionName="1.2.0">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tossfront.record" android:versionCode="5" android:versionName="1.4.0">
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="33" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -6,18 +6,23 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <queries>
         <package android:name="local.tossfront.youtubeweb" />
         <package android:name="dev.tossfront.audio" />
     </queries>
-    <application android:label="레코드 플레이어" android:icon="@drawable/ic_record" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:debuggable="false">
-        <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait">
+    <application android:hardwareAccelerated="false" android:label="레코드 플레이어" android:icon="@drawable/ic_record" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:debuggable="false">
+        <activity android:hardwareAccelerated="true" android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
         <service android:name=".SessionListener" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
         </service>
         <service android:name=".RecordOverlay" android:exported="false" />
+        <service android:name=".TimerStopService" android:exported="false" />
+        <receiver android:name=".TimerReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.TIME_SET" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" /></intent-filter>
+        </receiver>
         <service android:name=".HistoryCleanup" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 </manifest>

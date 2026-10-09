@@ -30,7 +30,7 @@ def main():
     configurations = {
         "deck": ("FrontDeck", "dev.tossfront.deck", "frontdeck", "android", "android", "1.0.0", "24"),
         "audio": ("FrontAudio", "dev.tossfront.audio", "frontaudio", "audio-android", "audio", "1.0.0", "26"),
-        "record": ("FrontRecord", "dev.tossfront.record", "frontrecord", "record-android", "record", "1.2.0", "26"),
+        "record": ("FrontRecord", "dev.tossfront.record", "frontrecord", "record-android", "record", "1.4.0", "26"),
         "youtubeweb": ("YouTube-Web", "local.tossfront.youtubeweb", "youtubeweb", "youtube-web-android", "youtubeweb", "2.2", "26"),
     }
     name, package, alias, source_name, build_name, version, minimum = configurations[args.app]
@@ -48,6 +48,8 @@ def main():
     if args.app == "deck":
         for item in (ROOT / "frontdeck/ui").iterdir():
             if item.is_file(): shutil.copy2(item, assets / item.name)
+    if (source / "assets").is_dir():
+        shutil.copytree(source / "assets", assets, dirs_exist_ok=True)
     run(["javac", "--release", "8", "-encoding", "UTF-8", "-classpath", android, "-d", classes, *source.rglob("*.java")])
     jar = build / "classes.jar"
     with zipfile.ZipFile(jar, "w") as archive:

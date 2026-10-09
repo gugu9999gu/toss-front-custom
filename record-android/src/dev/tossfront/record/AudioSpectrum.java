@@ -27,16 +27,16 @@ final class AudioSpectrum {
             Visualizer candidate = new Visualizer(0);
             visualizer = candidate;
             int[] range = Visualizer.getCaptureSizeRange();
-            int size = Math.max(range[0], Math.min(range[1], 512));
+            int size = Math.max(range[0], Math.min(range[1], 1024));
             if (candidate.setCaptureSize(size) != Visualizer.SUCCESS) throw new IllegalStateException("capture size");
             candidate.setScalingMode(Visualizer.SCALING_MODE_NORMALIZED);
             int result = candidate.setDataCaptureListener(new Visualizer.OnDataCaptureListener() {
                 public void onWaveFormDataCapture(Visualizer v, byte[] samples, int rate) {
-                    data.waveform(samples);
+                    data.sampling(rate,samples.length);data.waveform(samples);
                     if(data.peak>.01f){lastSignal=SystemClock.elapsedRealtime();silentRetries=0;}
                     if (!signalReported && data.peak > .01f) { signalReported = true; Log.i("FrontRecordAudio", "output_mix_signal_detected"); }
                 }
-                public void onFftDataCapture(Visualizer v, byte[] samples, int rate) { data.fft(samples); }
+                public void onFftDataCapture(Visualizer v, byte[] samples, int rate) { data.sampling(rate,samples.length);data.fft(samples); }
             }, Math.min(20000, Visualizer.getMaxCaptureRate()), true, true);
             if (result != Visualizer.SUCCESS || candidate.setEnabled(true) != Visualizer.SUCCESS) throw new IllegalStateException("capture start");
             started=SystemClock.elapsedRealtime();failed=false;failures=0; status = ""; Log.i("FrontRecordAudio", "output_mix_connected");

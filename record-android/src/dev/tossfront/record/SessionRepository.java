@@ -115,7 +115,8 @@ public final class SessionRepository {
         if(playing()&&!advertisement()&&gate.recordable(now)&&!"YouTube".equals(title()))library.played(id,title(),duration());
         if(ended)handleEnd(id);
     }
-    private void handleEnd(String id){if(library.loop==1){navigationAt=SystemClock.elapsedRealtime();gate.reset();custom("frontrecord.repeat_one",null);}else if(library.loop==2){String next=library.neighbor(id,1);if(next!=null)playVideo(next);}}
+    private void handleEnd(String id){if(PlaybackTimer.get(context).trackEnded()){pause();notifyObservers();return;}if(library.loop==1){navigationAt=SystemClock.elapsedRealtime();gate.reset();custom("frontrecord.repeat_one",null);}else if(library.loop==2){String next=library.neighbor(id,1);if(next!=null)playVideo(next);}}
+    static String formatTimer(long ms){long seconds=(Math.max(0,ms)+999)/1000;return String.format(java.util.Locale.ROOT,"%d:%02d",seconds/60,seconds%60);}
     public long duration() { return metadata == null ? 0 : Math.max(0, metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)); }
     public long position() {
         if (playback == null) return 0;
@@ -129,6 +130,7 @@ public final class SessionRepository {
         if (playing() && supports(PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_PLAY_PAUSE)) controller.getTransportControls().pause();
         else if (!playing() && supports(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PLAY_PAUSE)) controller.getTransportControls().play();
     }
+    public void pause(){if(controller!=null&&supports(PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_PLAY_PAUSE))controller.getTransportControls().pause();}
     public void seek(long position) { if (supports(PlaybackState.ACTION_SEEK_TO)) controller.getTransportControls().seekTo(Math.max(0, position)); }
     public void next() { if(library.loop==2){String id=library.neighbor(videoId(),1);if(id!=null)playVideo(id);}else if(supports(PlaybackState.ACTION_SKIP_TO_NEXT))controller.getTransportControls().skipToNext();else{String id=library.neighbor(videoId(),1);if(id!=null)playVideo(id);} }
     public void previous() { if(library.loop==2){String id=library.neighbor(videoId(),-1);if(id!=null)playVideo(id);}else if(supports(PlaybackState.ACTION_SKIP_TO_PREVIOUS))controller.getTransportControls().skipToPrevious();else{String id=library.neighbor(videoId(),-1);if(id!=null)playVideo(id);} }

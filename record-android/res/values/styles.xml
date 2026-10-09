@@ -1,0 +1,5 @@
+<resources>
+    <style name="RecordTimePicker">
+        <item name="android:timePickerMode">spinner</item>
+    </style>
+</resources>

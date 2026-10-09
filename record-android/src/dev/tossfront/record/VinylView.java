@@ -59,7 +59,7 @@ public final class VinylView extends FrameLayout {
         if (motionAllowed()) { motion.setPlaying(playing, SystemClock.uptimeMillis()); if (motion.moving()) schedule(); }
     }
 
-    public void applyAppearance(Appearance value) { appearance=value; ((PlatterLayer)disc.getChildAt(0)).accent=value.accent(); disc.getChildAt(0).invalidate(); invalidate(); refreshMotionPolicy(); }
+    public void applyAppearance(Appearance value) { appearance=value; ((PlatterLayer)disc.getChildAt(0)).setColors(value.visualColors()); disc.getChildAt(0).invalidate(); invalidate(); refreshMotionPolicy(); }
     private boolean motionAllowed() { return attached && isShown() && getWindowVisibility() == VISIBLE && (appearance==null?ValueAnimator.areAnimatorsEnabled():appearance.motion()); }
     private void schedule() { if (!scheduled) { scheduled = true; postOnAnimation(frame); } }
     private void suspend() { removeCallbacks(frame); scheduled = false; motion.suspend(); }
@@ -114,8 +114,11 @@ public final class VinylView extends FrameLayout {
         int accent=Color.rgb(173,83,56);
         private RadialGradient gradient;
         private final RectF gloss = new RectF();
+        private int[] colors={0xff6fc2be,0xff798dff,0xfff08ac8};private Shader labelGradient;
+        void setColors(int[] value){colors=value;accent=value[0];labelGradient=new LinearGradient(0,0,Math.max(1,getWidth()),Math.max(1,getHeight()),colors,null,Shader.TileMode.CLAMP);invalidate();}
         PlatterLayer(Context c) { super(c); }
         @Override protected void onSizeChanged(int w, int h, int ow, int oh) {
+            setColors(colors);
             float radius = Math.min(w, h) / 2f;
             gradient = new RadialGradient(w / 2f - radius * .2f, h / 2f - radius * .3f, radius * 1.4f,
                 new int[]{Color.rgb(55,55,52), Color.rgb(22,23,23), Color.rgb(9,10,10)}, new float[]{0,.55f,1}, Shader.TileMode.CLAMP);
@@ -127,7 +130,7 @@ public final class VinylView extends FrameLayout {
             p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(Math.max(.7f, radius * .003f));
             for (int i = 0; i < 43; i++) { p.setColor(i % 4 == 0 ? Color.argb(67,139,139,128) : Color.argb(38,144,144,130)); c.drawCircle(cx,cy,radius * (.36f + i * .014f),p); }
             p.setStrokeWidth(radius * .55f); p.setColor(Color.argb(14,255,255,240)); c.drawArc(gloss,218,35,false,p); c.drawArc(gloss,40,24,false,p);
-            fill(accent); c.drawCircle(cx,cy,radius * .33f,p);
+            fill(accent); p.setShader(labelGradient); c.drawCircle(cx,cy,radius * .33f,p);p.setShader(null);
         }
     }
     private static final class ArtworkLayer extends VectorLayer {

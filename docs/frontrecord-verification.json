@@ -5,9 +5,9 @@
   "apks": {
     "record": {
       "package": "dev.tossfront.record",
-      "version": "1.2.0",
-      "bytes": 57897,
-      "sha256": "f9665623edb462c8fc427e5f8c9732fe1072691bdb8c539e484f06f6e4ca169a",
+      "version": "1.4.0",
+      "bytes": 259190,
+      "sha256": "01a81ffc02568188c4e18cc1561968745041a5d6afb43eae052fcacd896dbb49",
       "signature_verified": true,
       "installed_hash_matches": true
     },
@@ -24,22 +24,18 @@
   "checks": {
     "final_playing_state": 3,
     "actual_output_mix_signal_received": true,
-    "point_sphere_pixels_change": true,
-    "retained_panel_title_pixels_stable": true,
-    "title_and_time_displayed": true,
-    "aurora_and_orbit_audio_response": true,
-    "settings_seven_modes_available": true,
-    "theme_and_accent_change": true,
-    "visual_area_resize_and_restore": true,
-    "individual_controls_hide_and_restore": true,
-    "system_bars_hide_and_restore": true,
-    "header_fades_after_five_seconds": true,
-    "first_hidden_touch_reveals_only": true,
-    "history_entry_displayed": true,
-    "favorite_pin_verified": true,
+    "bundled_webgl_ready": true,
+    "low_and_high_audio_onsets_received": true,
+    "six_3d_scenes_displayed": true,
+    "six_3d_scenes_change_with_actual_music": true,
+    "four_3d_filters_selected_and_displayed": true,
+    "3d_filter_survives_process_restart": true,
+    "thirteen_modes_available": true,
+    "volume_fades_after_five_seconds_and_returns": true,
+    "original_appearance_preferences_preserved": true,
     "library_survives_update": true,
-    "cold_session_history_playback": true,
-    "loop_mode_selection_verified": true,
+    "final_stop_timer_armed": false,
+    "exact_alarm_appop_allowed": true,
     "history_cleanup_job_registered": true,
     "listener_enabled": true,
     "overlay_permission_allowed": true,
@@ -52,12 +48,62 @@
     "official_app_connection_removed": true,
     "record_has_no_internet_permission": true
   },
+  "previous_version_live_checks": {
+    "version": "1.2.0",
+    "checks": {
+      "actual_output_mix_signal_received": true,
+      "point_sphere_pixels_change": true,
+      "retained_panel_title_pixels_stable": true,
+      "title_and_time_displayed": true,
+      "aurora_and_orbit_audio_response": true,
+      "settings_seven_modes_available": true,
+      "theme_and_accent_change": true,
+      "visual_area_resize_and_restore": true,
+      "individual_controls_hide_and_restore": true,
+      "system_bars_hide_and_restore": true,
+      "header_fades_after_five_seconds": true,
+      "first_hidden_touch_reveals_only": true,
+      "history_entry_displayed": true,
+      "favorite_pin_verified": true,
+      "library_survives_update": true,
+      "cold_session_history_playback": true,
+      "loop_mode_selection_verified": true
+    }
+  },
+  "feature_development_live_checks": {
+    "version": "1.3.0",
+    "one_minute_timer_pauses_web": true,
+    "clock_and_end_track_timer_save_and_cancel": true,
+    "sensitivity_4_2_saved": true,
+    "three_color_editing_and_gradient_display": true,
+    "media_volume_one_step_change_and_restore": true,
+    "actual_device_pause_icon_user_confirmed": true
+  },
   "offline_assertions": {
     "motion_and_audio": 15,
     "web_metadata_ads_sound_and_ended": 38,
-    "history_expiry_favorites_and_queue": 23
+    "history_expiry_favorites_and_queue": 23,
+    "timer_sensitivity_and_vocal_bands": 25,
+    "three_d_audio_rigs_filters_and_module_syntax": 37,
+    "total": 138
   },
-  "steady_frame_sample": {
+  "isolated_chromium_render_checks": {
+    "six_scenes_rendered": true,
+    "console_errors": 0,
+    "all_filters_change_rendered_pixels": true,
+    "paused_continuous_frames_stop": true
+  },
+  "direct_scene_author": {
+    "model": "claude-opus-5-5",
+    "modules": [
+      "game-scenes.js",
+      "stage-scenes.js",
+      "filters.js"
+    ],
+    "existing_four_game_stage_rigs_replaced": true
+  },
+  "previous_version_steady_frame_sample": {
+    "version": "1.2.0",
     "mode": "point_sphere",
     "renderer": "retained_software_panel_in_gpu_window",
     "total_frames": 1397,
@@ -76,6 +122,10 @@
     "post_install_device_reboot_tested": false,
     "long_playback_tested": false,
     "web_background_playback_supported": false,
-    "all_frames_meet_deadline": false
+    "all_frames_meet_deadline": false,
+    "true_voice_gender_or_instrument_recognition": false,
+    "natural_end_stop_timer_live_verified": false,
+    "native_screen_capture_consistently_matches_physical_display": false,
+    "filters_apply_to_native_seven_modes": false
   }
 }

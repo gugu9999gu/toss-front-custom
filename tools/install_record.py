@@ -20,7 +20,7 @@ def main():
         raise SystemExit("Select the intended Toss Front 2 on Android 13")
     if "uid=0(root)" not in adb_run(adb, serial, "shell", "id"):
         raise SystemExit("This setup tool requires root ADB; the installed app runs without root")
-    paths = [ROOT / "dist/FrontRecord-1.2.0.apk"]
+    paths = [ROOT / "dist/FrontRecord-1.4.0.apk"]
     if args.update_web: paths.append(ROOT / "dist/YouTube-Web-2.2.apk")
     if not all(path.is_file() for path in paths): raise SystemExit("Build requested APKs before installation")
     for path in paths:
@@ -30,6 +30,7 @@ def main():
     # Add only this app's listener and overlay access; other listeners/app operations stay intact.
     adb_run(adb, serial, "shell", "cmd notification allow_listener " + PACKAGE + "/.SessionListener 0")
     adb_run(adb, serial, "shell", "cmd appops set " + PACKAGE + " SYSTEM_ALERT_WINDOW allow")
+    adb_run(adb, serial, "shell", "cmd appops set " + PACKAGE + " SCHEDULE_EXACT_ALARM allow")
     adb_run(adb, serial, "shell", "cmd appops write-settings")
     adb_run(adb, serial, "shell", "pm grant " + PACKAGE + " android.permission.POST_NOTIFICATIONS")
     adb_run(adb, serial, "shell", "pm grant " + PACKAGE + " android.permission.RECORD_AUDIO")
