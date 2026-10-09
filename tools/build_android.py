@@ -23,17 +23,20 @@ def main():
     parser.add_argument("--sdk", type=Path, default=Path(os.environ.get("ANDROID_HOME", Path.home() / "AppData/Local/Android/Sdk")))
     parser.add_argument("--build-tools", default="36.0.0")
     parser.add_argument("--platform", default="android-33")
-    parser.add_argument("--app", choices=("deck", "audio"), default="deck")
+    parser.add_argument("--app", choices=("deck", "audio", "record", "youtubeweb"), default="deck")
     args = parser.parse_args()
     tools, android = args.sdk / "build-tools" / args.build_tools, args.sdk / "platforms" / args.platform / "android.jar"
     if not android.is_file(): raise SystemExit("Android SDK platform is missing")
-    audio = args.app == "audio"
-    name = "FrontAudio" if audio else "FrontDeck"
-    package = "dev.tossfront.audio" if audio else "dev.tossfront.deck"
-    alias = "frontaudio" if audio else "frontdeck"
-    source = ROOT / ("audio-android" if audio else "android")
-    build = ROOT / ("build/audio" if audio else "build/android")
-    output = ROOT / "dist" / (name + "-1.0.0.apk")
+    configurations = {
+        "deck": ("FrontDeck", "dev.tossfront.deck", "frontdeck", "android", "android", "1.0.0", "24"),
+        "audio": ("FrontAudio", "dev.tossfront.audio", "frontaudio", "audio-android", "audio", "1.0.0", "26"),
+        "record": ("FrontRecord", "dev.tossfront.record", "frontrecord", "record-android", "record", "1.0.0", "26"),
+        "youtubeweb": ("YouTube-Web", "local.tossfront.youtubeweb", "youtubeweb", "youtube-web-android", "youtubeweb", "2.0", "26"),
+    }
+    name, package, alias, source_name, build_name, version, minimum = configurations[args.app]
+    source = ROOT / source_name
+    build = ROOT / "build" / build_name
+    output = ROOT / "dist" / (name + "-" + version + ".apk")
     classes, assets = build / "classes", build / "assets"
     for folder in (classes, assets):
         target = folder.resolve()
@@ -42,14 +45,14 @@ def main():
         if folder.exists(): shutil.rmtree(target)
         folder.mkdir(parents=True)
     output.parent.mkdir(exist_ok=True)
-    if not audio:
+    if args.app == "deck":
         for item in (ROOT / "frontdeck/ui").iterdir():
             if item.is_file(): shutil.copy2(item, assets / item.name)
     run(["javac", "--release", "8", "-encoding", "UTF-8", "-classpath", android, "-d", classes, *source.rglob("*.java")])
     jar = build / "classes.jar"
     with zipfile.ZipFile(jar, "w") as archive:
         for item in classes.rglob("*.class"): archive.write(item, item.relative_to(classes).as_posix())
-    run(["java", "-cp", tools / "lib/d8.jar", "com.android.tools.r8.D8", "--min-api", "26" if audio else "24", "--lib", android, "--output", build, jar])
+    run(["java", "-cp", tools / "lib/d8.jar", "com.android.tools.r8.D8", "--min-api", minimum, "--lib", android, "--output", build, jar])
     suffix = ".exe" if os.name == "nt" else ""
     unsigned, aligned = build / "unsigned.apk", build / "aligned.apk"
     run([tools / ("aapt" + suffix), "package", "-f", "-M", source / "AndroidManifest.xml", "-S", source / "res", "-A", assets, "-I", android, "-F", unsigned])

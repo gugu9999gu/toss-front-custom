@@ -1,0 +1,57 @@
+{
+  "verified_date_kst": "2026-10-09",
+  "model": "toss_front2",
+  "android_version": "13",
+  "apks": {
+    "record": {
+      "package": "dev.tossfront.record",
+      "version": "1.0.0",
+      "bytes": 29225,
+      "sha256": "0fd6a23a303a292344d81b617a18b0eb2d88e082251a8c40f3fe999ca55738ab",
+      "signature_verified": true,
+      "installed": true
+    },
+    "web": {
+      "package": "local.tossfront.youtubeweb",
+      "version": "2.0",
+      "bytes": 16858,
+      "sha256": "117ab47a7e5f7c897f6965ff3699a00a8292ec5042fecaf184709b2ad0bcb1bf",
+      "signature_verified": true,
+      "installed": true
+    }
+  },
+  "live_youtube_source": "web",
+  "checks": {
+    "pause_state": 2,
+    "pause_state_after": 2,
+    "paused_position_stable": true,
+    "paused_disc_pixels_stable": true,
+    "resume_state": 3,
+    "resume_state_after": 3,
+    "playing_position_advances": true,
+    "playing_disc_pixels_change": true,
+    "title_displayed": true,
+    "thumbnail_displayed": true,
+    "duration_displayed": true,
+    "seek_to_midpoint_verified": true,
+    "original_playback_point_restored": true,
+    "playing_after_seek": true,
+    "overlay_close_stops_service": true,
+    "web_foreground_after_close": true,
+    "playing_after_overlay_close": true,
+    "final_build_installed": true,
+    "primary_overlay_button_visible": true,
+    "ui_overlay_flow_verified": true,
+    "final_playing": true,
+    "listener_bound": true,
+    "own_app_crash_found": false
+  },
+  "limitations": {
+    "web_background_playback_pauses": true,
+    "official_app_live_playback_verified": false,
+    "post_install_device_reboot_tested": false,
+    "long_playback_tested": false
+  },
+  "offline_metadata_assertions_passed": 14,
+  "existing_deck_and_audio_builds_passed": true
+}
