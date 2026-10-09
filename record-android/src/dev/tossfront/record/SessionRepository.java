@@ -25,6 +25,9 @@ public final class SessionRepository {
     private PlaybackState playback;
     private final RecordLibrary library;
     private final PlaybackGate gate=new PlaybackGate();
+    private final HistoryQueue historyQueue=new HistoryQueue();
+    private String observedId="",historyTarget="";
+    private boolean historyNavigating;
     private String pendingId="";
     private long navigationAt;
     private final MediaController.Callback callback = new MediaController.Callback() {
@@ -111,6 +114,7 @@ public final class SessionRepository {
     String videoId(){return metadata==null?"":metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID);}
     boolean advertisement(){return metadata!=null&&metadata.getLong("frontrecord.is_ad")==1;}
     private void track(){String id=videoId();if(!LibraryCore.valid(id))return;long now=SystemClock.elapsedRealtime();if(!pendingId.isEmpty()&&now-navigationAt>8000){pendingId="";gate.reset();}if(now-navigationAt<1500||!pendingId.isEmpty()&&!pendingId.equals(id))return;if(pendingId.equals(id)&&playing()&&!advertisement())pendingId="";
+        if(!id.equals(observedId)){if(!id.equals(historyTarget)){historyQueue.clear();historyNavigating=false;}observedId=id;historyTarget="";}
         boolean ended=gate.update(id,playing(),playback!=null&&playback.getState()==PlaybackState.STATE_STOPPED,advertisement(),now);
         if(playing()&&!advertisement()&&gate.recordable(now)&&!"YouTube".equals(title()))library.played(id,title(),duration());
         if(ended)handleEnd(id);
@@ -132,10 +136,14 @@ public final class SessionRepository {
     }
     public void pause(){if(controller!=null&&supports(PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_PLAY_PAUSE))controller.getTransportControls().pause();}
     public void seek(long position) { if (supports(PlaybackState.ACTION_SEEK_TO)) controller.getTransportControls().seekTo(Math.max(0, position)); }
-    public void next() { if(library.loop==2){String id=library.neighbor(videoId(),1);if(id!=null)playVideo(id);}else if(supports(PlaybackState.ACTION_SKIP_TO_NEXT))controller.getTransportControls().skipToNext();else{String id=library.neighbor(videoId(),1);if(id!=null)playVideo(id);} }
-    public void previous() { if(library.loop==2){String id=library.neighbor(videoId(),-1);if(id!=null)playVideo(id);}else if(supports(PlaybackState.ACTION_SKIP_TO_PREVIOUS))controller.getTransportControls().skipToPrevious();else{String id=library.neighbor(videoId(),-1);if(id!=null)playVideo(id);} }
-    boolean canSkip(int direction){if(library.loop!=2&&supports(direction>0?PlaybackState.ACTION_SKIP_TO_NEXT:PlaybackState.ACTION_SKIP_TO_PREVIOUS))return true;String id=library.neighbor(videoId(),direction);return id!=null&&!id.equals(videoId());}
-    void playVideo(String id){if(!LibraryCore.valid(id))return;pendingId=id;navigationAt=SystemClock.elapsedRealtime();gate.reset();if(controller!=null){Bundle value=new Bundle();value.putString("video_id",id);custom("frontrecord.play_id",value);}else{Intent intent=webIntent(true);if(intent!=null)context.startActivity(intent.putExtra("play_video_id",id));}}
+    public void next(){navigate(1);}
+    public void previous(){navigate(-1);}
+    private long skipAction(int direction){return direction>0?PlaybackState.ACTION_SKIP_TO_NEXT:PlaybackState.ACTION_SKIP_TO_PREVIOUS;}
+    private String skipTarget(int direction){return library.loop==2?library.neighbor(videoId(),direction):historyQueue.neighbor(library.entries(false),videoId(),direction);}
+    boolean canSkip(int direction){if(!connected()||advertisement()||!pendingId.isEmpty())return false;if(library.loop!=2&&supports(skipAction(direction)))return true;String id=skipTarget(direction);return id!=null&&!id.equals(videoId());}
+    private void navigate(int direction){if(!canSkip(direction))return;String id=skipTarget(direction);boolean queued=historyNavigating&&id!=null&&!id.equals(videoId());if(library.loop!=2&&!queued&&supports(skipAction(direction))){historyQueue.clear();historyTarget="";historyNavigating=false;if(direction>0)controller.getTransportControls().skipToNext();else controller.getTransportControls().skipToPrevious();}else playVideo(id,library.loop!=2);}
+    void playVideo(String id){playVideo(id,false);}
+    private void playVideo(String id,boolean keepHistoryQueue){if(!LibraryCore.valid(id))return;if(!keepHistoryQueue)historyQueue.clear();historyNavigating=keepHistoryQueue;historyTarget=keepHistoryQueue?id:"";pendingId=id;navigationAt=SystemClock.elapsedRealtime();gate.reset();if(controller!=null){Bundle value=new Bundle();value.putString("video_id",id);custom("frontrecord.play_id",value);}else{Intent intent=webIntent(true);if(intent!=null)context.startActivity(intent.putExtra("play_video_id",id));}}
     private void custom(String action,Bundle data){if(controller!=null)controller.getTransportControls().sendCustomAction(action,data);}
     int loopMode(){return library.loop;}
     void cycleLoop(){int next=library.loop+1;if(next==2&&library.core.favorites.isEmpty())next=0;if(next>2)next=0;library.loop(next);notifyObservers();}

@@ -75,8 +75,8 @@
   "frontrecord_web_playback_verified": true,
   "frontrecord_verified_date_kst": "2026-10-09",
   "youtube_web_version": "2.2",
-  "frontrecord_version": "1.4.0",
-  "frontrecord_visualization_modes": 13,
+  "frontrecord_version": "1.5.0",
+  "frontrecord_visualization_modes": 18,
   "frontrecord_history_retention_days": 30,
   "frontrecord_favorites_expire": false,
   "frontrecord_official_app_connection_removed": true,
@@ -87,5 +87,21 @@
   "frontrecord_fullscreen_scene_canvas": true,
   "frontrecord_volume_fades_after_five_seconds": true,
   "frontrecord_game_stage_rebuild_author": "claude-opus-5-5",
-  "frontrecord_3d_filters": ["original", "dither", "pixel", "pixel_dither"]
+  "frontrecord_3d_filters": [
+    "original",
+    "dither",
+    "pixel",
+    "pixel_dither"
+  ],
+  "frontrecord_audio_camera_motion": true,
+  "frontrecord_camera_toggle": true,
+  "frontrecord_new_spatial_modes": [
+    "fluid_sphere",
+    "ribbon_wave",
+    "wave_terrain",
+    "spectrum_flower",
+    "double_helix"
+  ],
+  "frontrecord_previous_next_visible_when_enabled": true,
+  "frontrecord_history_back_forward_live_verified": true
 }
