@@ -1,0 +1,40 @@
+package dev.tossfront.record;
+
+import android.app.Dialog;
+import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.GradientDrawable;
+import android.view.*;
+import android.widget.*;
+
+/** Scrollable touch settings keep the web player in the foreground. */
+final class AppearanceSheet {
+    private final Context context;private final Appearance a;private final RecordPanel.Host host;
+    private final Runnable changed,retry;private final Dialog dialog;private final boolean overlay;
+    private ScrollView scroll;
+    void dismiss(){dialog.dismiss();}
+    AppearanceSheet(Context c,Appearance a,RecordPanel.Host host,Runnable changed,Runnable retry,Runnable dismissed,boolean overlay){context=c;this.a=a;this.host=host;this.changed=changed;this.retry=retry;this.overlay=overlay;dialog=new Dialog(c,android.R.style.Theme_Material_Light_NoActionBar);dialog.setOnDismissListener(d->dismissed.run());}
+    void show(){render();Window w=dialog.getWindow();if(overlay)w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);w.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);w.setBackgroundDrawableResource(android.R.color.transparent);w.setGravity(Gravity.BOTTOM);dialog.setCanceledOnTouchOutside(true);dialog.show();w.setLayout(-1,-2);w.setDimAmount(.22f);w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);}
+    private int dp(int n){return Math.round(n*context.getResources().getDisplayMetrics().density);}
+    private TextView text(String value,int size,int color){TextView v=new TextView(context);v.setText(value);v.setTextSize(size);v.setTextColor(color);return v;}
+    private GradientDrawable shape(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
+    private void apply(){a.save();changed.run();render();}
+    private TextView button(String label,boolean selected,Runnable action){TextView v=text(label,13,selected?a.bg():a.text());v.setGravity(Gravity.CENTER);v.setMinHeight(dp(48));v.setPadding(dp(4),dp(6),dp(4),dp(6));v.setBackground(shape(selected?a.accent():a.bg(),12));v.setOnClickListener(x->action.run());v.setClickable(true);v.setFocusable(true);RecordPanel.press(v,a);return v;}
+    private void section(LinearLayout body,String label){TextView v=text(label,12,a.muted());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(12);p.bottomMargin=dp(6);body.addView(v,p);}
+    private void row(LinearLayout parent,String[] labels,int selected,java.util.function.IntConsumer action){LinearLayout row=new LinearLayout(context);for(int i=0;i<labels.length;i++){final int index=i;TextView v=button(labels[i],i==selected,()->action.accept(index));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(48),1);p.setMargins(i==0?0:dp(4),0,i==labels.length-1?0:dp(4),0);row.addView(v,p);}parent.addView(row);}
+    private void option(LinearLayout parent,String label,boolean checked,java.util.function.Consumer<Boolean> action){Switch s=new Switch(context);s.setText(label);s.setTextSize(14);s.setTextColor(a.text());s.setMinHeight(dp(48));s.setChecked(checked);s.setThumbTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{}},new int[]{a.accent(),a.muted()}));s.setOnCheckedChangeListener((v,value)->{action.accept(value);apply();});parent.addView(s);}
+    private void render(){int position=scroll==null?0:scroll.getScrollY();LinearLayout outer=new LinearLayout(context);outer.setOrientation(1);outer.setPadding(dp(24),dp(12),dp(24),dp(16));outer.setBackground(shape(a.surface(),28));scroll=new ScrollView(context);scroll.setVerticalScrollBarEnabled(false);LinearLayout body=new LinearLayout(context);body.setOrientation(1);scroll.addView(body);
+        LinearLayout header=new LinearLayout(context);header.setGravity(Gravity.CENTER_VERTICAL);header.addView(text("화면 설정",18,a.text()),new LinearLayout.LayoutParams(0,dp(48),1));header.addView(button("닫기",false,dialog::dismiss),new LinearLayout.LayoutParams(dp(56),dp(48)));outer.addView(header);outer.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        section(body,"시각화");row(body,java.util.Arrays.copyOfRange(Appearance.MODES,0,4),a.mode,index->{a.mode=index;apply();});Space gap=new Space(context);body.addView(gap,new LinearLayout.LayoutParams(1,dp(8)));row(body,java.util.Arrays.copyOfRange(Appearance.MODES,4,7),a.mode-4,index->{a.mode=index+4;apply();});
+        section(body,"시각화 영역");TextView area=text(a.area+"%",13,a.text());body.addView(area);SeekBar size=new SeekBar(context);size.setMax(70);size.setProgress(a.area-30);size.setContentDescription("시각화 영역 크기");size.setProgressTintList(ColorStateList.valueOf(a.accent()));size.setThumbTintList(ColorStateList.valueOf(a.accent()));size.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onStartTrackingTouch(SeekBar b){}public void onProgressChanged(SeekBar b,int value,boolean user){if(user){a.area=value+30;area.setText(a.area+"%");a.save();changed.run();}}public void onStopTrackingTouch(SeekBar b){apply();}});body.addView(size,new LinearLayout.LayoutParams(-1,dp(48)));
+        section(body,"색상 테마");row(body,Appearance.THEMES,a.theme,index->{a.theme=index;apply();});
+        section(body,"포인트 색");LinearLayout colors=new LinearLayout(context);for(int i=0;i<Appearance.ACCENTS.length;i++){final int index=i;FrameLayout touch=new FrameLayout(context);touch.setContentDescription(Appearance.ACCENTS[i]+(i==a.point?" · 선택됨":""));View dot=new View(context);GradientDrawable paint=shape(a.pointColor(i),24);if(i==a.point)paint.setStroke(dp(3),a.text());dot.setBackground(paint);touch.addView(dot,new FrameLayout.LayoutParams(dp(30),dp(30),Gravity.CENTER));touch.setOnClickListener(v->{a.point=index;apply();});RecordPanel.press(touch,a);colors.addView(touch,new LinearLayout.LayoutParams(0,dp(48),1));}body.addView(colors);
+        section(body,"반응 세기");row(body,new String[]{"낮게","보통","크게"},a.gain,index->{a.gain=index;apply();});
+        section(body,"화면에 표시");option(body,"영상 제목 · 채널",a.showTitle,v->a.showTitle=v);option(body,"재생바 · 시간",a.showProgress,v->a.showProgress=v);option(body,"재생 · 일시정지",a.showPlay,v->a.showPlay=v);option(body,"이전 · 다음",a.showSkip,v->a.showSkip=v);option(body,"반복 재생 버튼",a.showLoop,v->a.showLoop=v);
+        section(body,"재생 · 화면");option(body,"전체 화면",a.immersive,v->a.immersive=v);option(body,"움직임 줄이기",a.reduced,v->a.reduced=v);option(body,"광고 건너뛰기 자동 누름",a.autoSkip,v->a.autoSkip=v);
+        TextView privacy=text("파형은 재생 소리를 읽으며 녹음하지 않습니다.\n건너뛰기 버튼이 있는 광고만 자동으로 누릅니다.",12,a.muted());privacy.setPadding(0,dp(8),0,dp(8));body.addView(privacy);
+        body.addView(button("오디오 분석 다시 연결",false,retry));if(context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)!=android.content.pm.PackageManager.PERMISSION_GRANTED)body.addView(button("오디오 분석 허용",false,()->{dialog.dismiss();host.audioPermission();}));
+        LinearLayout footer=new LinearLayout(context);footer.addView(button("웹 화면 보기",false,()->{dialog.dismiss();host.openSource();}),new LinearLayout.LayoutParams(0,dp(48),1));footer.addView(button("오디오 출력",false,()->{dialog.dismiss();host.openAudio();}),new LinearLayout.LayoutParams(0,dp(48),1));footer.addView(button("기본값으로",false,()->{a.reset();apply();}),new LinearLayout.LayoutParams(0,dp(48),1));body.addView(footer);
+        int max=Math.round(context.getResources().getDisplayMetrics().heightPixels*.84f);dialog.setContentView(outer,new ViewGroup.LayoutParams(-1,max));scroll.post(()->scroll.scrollTo(0,position));
+    }
+}

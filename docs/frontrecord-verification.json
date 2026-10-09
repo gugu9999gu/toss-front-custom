@@ -5,53 +5,77 @@
   "apks": {
     "record": {
       "package": "dev.tossfront.record",
-      "version": "1.0.0",
-      "bytes": 29225,
-      "sha256": "0fd6a23a303a292344d81b617a18b0eb2d88e082251a8c40f3fe999ca55738ab",
+      "version": "1.2.0",
+      "bytes": 57897,
+      "sha256": "f9665623edb462c8fc427e5f8c9732fe1072691bdb8c539e484f06f6e4ca169a",
       "signature_verified": true,
-      "installed": true
+      "installed_hash_matches": true
     },
     "web": {
       "package": "local.tossfront.youtubeweb",
-      "version": "2.0",
-      "bytes": 16858,
-      "sha256": "117ab47a7e5f7c897f6965ff3699a00a8292ec5042fecaf184709b2ad0bcb1bf",
+      "version": "2.2",
+      "bytes": 20954,
+      "sha256": "cc32c7c9c1191f6b5c28edb7f44643e7c0659361db180b1cd2135aae5850f8f3",
       "signature_verified": true,
-      "installed": true
+      "installed_hash_matches": true
     }
   },
   "live_youtube_source": "web",
   "checks": {
-    "pause_state": 2,
-    "pause_state_after": 2,
-    "paused_position_stable": true,
-    "paused_disc_pixels_stable": true,
-    "resume_state": 3,
-    "resume_state_after": 3,
-    "playing_position_advances": true,
-    "playing_disc_pixels_change": true,
-    "title_displayed": true,
-    "thumbnail_displayed": true,
-    "duration_displayed": true,
-    "seek_to_midpoint_verified": true,
-    "original_playback_point_restored": true,
-    "playing_after_seek": true,
-    "overlay_close_stops_service": true,
-    "web_foreground_after_close": true,
-    "playing_after_overlay_close": true,
-    "final_build_installed": true,
-    "primary_overlay_button_visible": true,
-    "ui_overlay_flow_verified": true,
-    "final_playing": true,
-    "listener_bound": true,
-    "own_app_crash_found": false
+    "final_playing_state": 3,
+    "actual_output_mix_signal_received": true,
+    "point_sphere_pixels_change": true,
+    "retained_panel_title_pixels_stable": true,
+    "title_and_time_displayed": true,
+    "aurora_and_orbit_audio_response": true,
+    "settings_seven_modes_available": true,
+    "theme_and_accent_change": true,
+    "visual_area_resize_and_restore": true,
+    "individual_controls_hide_and_restore": true,
+    "system_bars_hide_and_restore": true,
+    "header_fades_after_five_seconds": true,
+    "first_hidden_touch_reveals_only": true,
+    "history_entry_displayed": true,
+    "favorite_pin_verified": true,
+    "library_survives_update": true,
+    "cold_session_history_playback": true,
+    "loop_mode_selection_verified": true,
+    "history_cleanup_job_registered": true,
+    "listener_enabled": true,
+    "overlay_permission_allowed": true,
+    "permissions": {
+      "RECORD_AUDIO": true,
+      "MODIFY_AUDIO_SETTINGS": true,
+      "POST_NOTIFICATIONS": true
+    },
+    "own_app_crash_found": false,
+    "official_app_connection_removed": true,
+    "record_has_no_internet_permission": true
+  },
+  "offline_assertions": {
+    "motion_and_audio": 15,
+    "web_metadata_ads_sound_and_ended": 38,
+    "history_expiry_favorites_and_queue": 23
+  },
+  "steady_frame_sample": {
+    "mode": "point_sphere",
+    "renderer": "retained_software_panel_in_gpu_window",
+    "total_frames": 1397,
+    "deadline_jank_frames": 115,
+    "deadline_jank_percent": 8.23,
+    "legacy_jank_percent": 98.43,
+    "p50_ms": 24,
+    "p90_ms": 34,
+    "p95_ms": 40,
+    "p99_ms": 57,
+    "stable_60fps_claimed": false
   },
   "limitations": {
-    "web_background_playback_pauses": true,
-    "official_app_live_playback_verified": false,
+    "actual_ad_skip_click_live_verified": false,
+    "multi_item_natural_end_loop_live_verified": false,
     "post_install_device_reboot_tested": false,
-    "long_playback_tested": false
-  },
-  "offline_metadata_assertions_passed": 14,
-  "existing_deck_and_audio_builds_passed": true
+    "long_playback_tested": false,
+    "web_background_playback_supported": false,
+    "all_frames_meet_deadline": false
+  }
 }

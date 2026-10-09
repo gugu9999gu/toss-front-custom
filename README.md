@@ -12,7 +12,7 @@
 | 공식 YouTube | Google 서명 확인 후 설치했으나 영상이 약 1~2분 후 실패. 정상 시청은 미완료. Google 구성요소는 반복 오류를 막기 위해 사용 중지. |
 | Bluetooth | 첫 번째 기기에 연결된 A2DP 스피커 확인. 내장 스피커·Bluetooth 출력 전환과 실제 소리 청취 확인. |
 | FrontAudio | 첫 번째 기기에 ‘오디오 출력’ 앱 설치. 음악·영상 출력 선택, 자동 선택 복원, 테스트 소리 지원. 기기 재부팅 후 PC에서 제어 재시작 필요. |
-| FrontRecord | 첫 번째 기기에 ‘레코드 플레이어’ 설치. YouTube 웹의 실제 제목·썸네일·시간 표시, 재생/일시정지·위치 조절·레코드 회전 연동 확인. 웹 화면 위에 띄워 사용. 공식 앱 재생 문제는 미해결. |
+| FrontRecord 1.2 | 레코드·점 구체 등 7종 시각화, 테마·색상·영역 크기·제어 표시 설정. 5초 후 메뉴 숨김, 30일 재생 기록·영구 즐겨찾기·목록 반복. YouTube 웹 2.2와 연결하며 공식 앱 연결 제거. |
 | 두 번째 기기 | 사용자가 Toss Front 2와 정상 토스 화면 부팅을 확인. 케이블·PC 포트 교체와 EDL/정상 부팅 감시 후에도 USB 장치가 나타나지 않음. 백업·탈옥·앱 설치 전. |
 | FrontDeck | Android APK 빌드·서명 검증 완료. Windows 연결 프로그램과 작업/미디어 버튼 화면 구현. 실물 기기 설치·제어 시험 대기. |
 
@@ -27,12 +27,14 @@
 - `frontdeck/`: Windows 앱 실행·단축키·미디어 제어용 연결 프로그램과 버튼 화면.
 - `android/`: Google 서비스가 필요 없는 FrontDeck Android 앱.
 - `audio-android/`: 첫 번째 기기의 오디오 출력 선택 앱과 기기 내부 제어 프로그램.
-- `record-android/`: YouTube 미디어 세션과 연결하는 레코드 화면 앱.
-- `youtube-web-android/`: 레코드 앱에 재생 정보를 전달하는 기존 YouTube 웹 앱의 2.0 소스.
+- `record-android/`: YouTube 웹 미디어 세션과 연결하는 음악 시각화·기록 앱.
+- `youtube-web-android/`: 재생 정보·종료 사건 전달과 실제 광고 건너뛰기 버튼 자동 누름을 지원하는 YouTube 웹 2.2 소스.
 
 [FrontAudio 사용·설치·재부팅 후 제어 시작 방법](docs/frontaudio.md)
 
 [FrontRecord 사용·빌드·실물 검증 결과](docs/frontrecord.md)
+
+[Claude Opus 5.5 기본 설계](docs/frontrecord-design-opus.md) · [구체·기록·즐겨찾기 확장 설계](docs/frontrecord-expansion-opus.md)
 
 ## 공개 저장소에 포함하지 않는 자료
 
