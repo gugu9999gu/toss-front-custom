@@ -32,7 +32,7 @@ export function fighterTargets(f,leftAttack,rightAttack,out={}){
 }
 export function createRacing(ctx){
   const R=64,C=6,W=5.2,L=1.05,root=ctx.root;
-  let bend=0,dist=0,drift=0,sy=0,sv=0,boost=0,camX=0;
+  let bend=0,dist=0,drift=0,cameraDrift=0,sy=0,sv=0,boost=0,camX=0;
   const rg=new T.PlaneGeometry(1,1,C,R-1),pa=rg.attributes.position,P=pa.array,hs=new Float32Array(R);
   const cx=j=>-bend*j*j*.0035;
   const shape=()=>{
@@ -63,13 +63,15 @@ export function createRacing(ctx){
   return (f,dt,moving)=>{
     dt=Math.min(dt||0,.1);
     const ok=!!(f&&f.live&&moving),q=f||{},st=ctx.state,b16=st.bands||[],g=st.gain||1;
-    let asym=0;
-    if(ok)for(let i=0;i<8;i++)asym+=ctx.wavePoint(i)-ctx.wavePoint(i+8);
+    let asym=0,cameraAsym=0;const rawWave=ctx.audioWavePoint||ctx.wavePoint;
+    if(ok)for(let i=0;i<8;i++){asym+=ctx.wavePoint(i)-ctx.wavePoint(i+8);cameraAsym+=rawWave(i)-rawWave(i+8);}
     const e=ok?clamp(q.energy||0,0,3):0;
     const bv=stepEnv(be,ok?Math.max(q.onsetLeft||0,q.onsetRight||0):0,q,dt,ok);
     boost=ease(boost,ok?Math.max(bv,(q.boost||0)*.35):0,14,dt);
     const dT=ok?clamp(((q.centroid||0)-.5)*1.2+(q.waveBalance||0)*.4+asym*.04,-.65,.65)*Math.min(1,e):0;
     drift=ease(drift,dT,4,dt);bend=ease(bend,drift,1.5,dt);
+    const cameraTarget=ok?clamp(((q.centroid||0)-.5)*1.2+(q.waveBalance||0)*.4+cameraAsym*.04,-.65,.65)*Math.min(1,e):0;
+    cameraDrift=ease(cameraDrift,cameraTarget,4,dt);
     if(ok)dist+=(e*5+bv*9)*dt;
     for(let j=0;j<R;j++)hs[j]=ok?ctx.wavePoint(j)*.09*Math.min(1,j/10):ease(hs[j],0,3,dt);
     shape();
@@ -84,8 +86,8 @@ export function createRacing(ctx){
       M.compose(V,Q,S);py.setMatrixAt(k,M);
     }
     py.instanceMatrix.needsUpdate=true;
-    camX=ease(camX,drift*.8,3,dt);
-    ctx.look(camX,1.45,6.6,drift*.5,.7,-6);
+    camX=ease(camX,cameraDrift*.8,3,dt);
+    ctx.look(camX,1.45,6.6,cameraDrift*.5,.7,-6);
   };
 }
 export function createFighting(ctx){

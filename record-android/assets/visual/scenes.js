@@ -4,6 +4,7 @@ import {createRacing,createFighting} from './game-scenes.js';
 import {createDance,createOrchestra} from './stage-scenes.js';
 import {SceneFilter} from './filters.js';
 import {AudioCamera} from './camera-motion.js';
+import {HandGeometryField,handPoints,handWave} from './hand-field.js';
 import {createFluidSphere,createRibbonWave,createWaveTerrain,createSpectrumFlower,createDoubleHelix} from './wave-scenes.js';
 
 // Procedural low-poly scenes; no textures, remote models, recordings, or title/ID input.
@@ -17,12 +18,13 @@ const rim=new T.DirectionalLight(0x77baff,1.2);rim.position.set(-5,3,-6);scene.a
 let root=new T.Group();scene.add(root);
 let state={mode:0,filter:0,cameraMotion:true,playing:false,signal:false,reduced:false,gain:1,colors:['#6fc2be','#798dff','#f08ac8'],background:'#000000',bands:[],rms:0};
 let selected=-1,paintKey='',backgroundKey='',framingKey='',parts=[],grounds=[],updateScene=()=>{},last=0,frames=0,raf=0,lastData=0;
-const waveSmooth=new Float32Array(32);
+const waveSmooth=new Float32Array(32),audioWaveSmooth=new Float32Array(32);
 const wavePoint=i=>waveSmooth[i%32];
+const audioWavePoint=i=>audioWaveSmooth[i%32];
 const motion=new AudioMotion(),colorA=new T.Color(),colorB=new T.Color();
 let lowOnsets=0,highOnsets=0;
 const audioCamera=new AudioCamera(),baseEye=new T.Vector3(),baseTarget=new T.Vector3(),offset=new T.Vector3(),target=new T.Vector3(),lastEye=new T.Vector3();
-let cameraMoves=0;
+let cameraMoves=0;let handField=new HandGeometryField(root);
 
 function material(color){return new T.MeshStandardMaterial({color,roughness:.72,metalness:.12,flatShading:true});}
 function neutral(parent,geometry,color,x=0,y=0,z=0){const mesh=new T.Mesh(geometry,material(color));mesh.position.set(x,y,z);parent.add(mesh);return mesh;}
@@ -52,14 +54,14 @@ function galaxy(){
   return (f,dt,moving)=>{const e=Math.min(2.4,f.energy);cloud.rotation.y=moving?f.phase*.13:cloud.rotation.y;cloud.rotation.z=moving?Math.sin(f.phase*.15)*.15:cloud.rotation.z;cloud.scale.setScalar(1+e*.23);core.scale.setScalar(.75+e*.5+f.boost*.25);};
 }
 function tunnel(){
-  look(0,0,5,0,0,-15);const rings=[];for(let i=0;i<24;i++){const ring=gradient(root,new T.TorusGeometry(2.0,.035,6,40),0,0,-i*3);rings.push(ring);}let flow=0;
-  return (f,dt,moving)=>{flow+=(moving?f.energy*12+f.boost*13:0)*dt;rings.forEach((ring,i)=>{ring.position.z=4-((i*3-flow)%72+72)%72;ring.rotation.z=moving?f.phase*.1+i*.18:ring.rotation.z;ring.scale.setScalar(1+(state.bands[i%16]||0)*state.gain*.18);});camera.position.x=moving?wavePoint(0)*f.energy*.12:0;camera.position.y=moving?wavePoint(16)*f.energy*.08:0;camera.lookAt(0,0,-12);};
+  look(0,0,5,0,0,-15);const rings=[];for(let i=0;i<24;i++){const ring=gradient(root,new T.TorusGeometry(2.0,.035,6,40),0,0,-i*3);ring.userData.handReactive=true;rings.push(ring);}let flow=0;
+  return (f,dt,moving)=>{flow+=(moving?f.energy*12+f.boost*13:0)*dt;rings.forEach((ring,i)=>{ring.position.z=4-((i*3-flow)%72+72)%72;ring.rotation.z=moving?f.phase*.1+i*.18:ring.rotation.z;ring.scale.setScalar(1+(state.bands[i%16]||0)*state.gain*.18);});camera.position.x=moving?audioWavePoint(0)*f.energy*.12:0;camera.position.y=moving?audioWavePoint(16)*f.energy*.08:0;camera.lookAt(0,0,-12);};
 }
-function build(mode){dispose();selected=mode;audioCamera.reset();camera.up.set(0,1,0);camera.fov=45;const context={root,camera,get state(){return state;},wavePoint,gradient,neutral,group,look};const factory=[createRacing,createFighting,createDance,createOrchestra,galaxy,tunnel,createFluidSphere,createRibbonWave,createWaveTerrain,createSpectrumFlower,createDoubleHelix][mode];updateScene=factory(context);paintKey='';framingKey='';}
+function build(mode){dispose();selected=mode;audioCamera.reset();camera.up.set(0,1,0);camera.fov=45;const context={root,camera,get state(){return state;},wavePoint,audioWavePoint,gradient,neutral,group,look};const factory=[createRacing,createFighting,createDance,createOrchestra,galaxy,tunnel,createFluidSphere,createRibbonWave,createWaveTerrain,createSpectrumFlower,createDoubleHelix][mode];updateScene=factory(context);handField=new HandGeometryField(root);paintKey='';framingKey='';}
 function resize(){if(!renderer)return;const w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight);if(canvas.width!==w||canvas.height!==h)renderer.setSize(w,h,false);const focus=clamp(state.focus??.3,.05,.95),span=clamp(state.span??.4,.08,1),next=[w,h,focus,span,camera.fov].join('|');if(next!==framingKey){framingKey=next;camera.zoom=span;camera.setViewOffset(w,h,0,(.5-focus)*h,w,h);}}
 
 function paint(){if(!webgl||lost)return;resize();filter.setMode(state.filter);filter.setRetro(state.retro);filter.resize(canvas.width,canvas.height);filter.render(renderer,scene,camera);frames++;}
-function step(now){raf=0;const limit=state.reduced?83:33;if(last&&now-last<limit){raf=requestAnimationFrame(step);return;}const dt=last?Math.min(.06,(now-last)/1000):.016;last=now;const live=state.playing&&state.signal&&performance.now()-lastData<1000,input={...state,playing:live};const handGain=state.gesture?.active?clamp(state.gesture.strength,.5,2.2):1;for(let i=0;i<32;i++){const target=live?clamp((state.wave?.[i]||0)*state.gain*handGain,-3,3):0;waveSmooth[i]+=(target-waveSmooth[i])*(1-Math.exp(-dt/.08));}const f=motion.tick(input,dt);if(f.onsetLeft>0)lowOnsets++;if(f.onsetRight>0)highOnsets++;lastEye.copy(camera.position);updateScene(f,dt,live&&!state.reduced);moveCamera(f,dt);const hand=state.gesture||{},tracking=!!hand.active;root.scale.setScalar(tracking?clamp(hand.spread,.7,1.55):1);root.position.x=tracking?(clamp(hand.x,0,1)-.5)*.8:0;root.position.y=tracking?(.5-clamp(hand.y,0,1))*.45:0;root.rotation.z=tracking?(clamp(hand.x,0,1)-.5)*.15:0;paint();if(live)raf=requestAnimationFrame(step);}
+function step(now){raf=0;const limit=state.reduced?83:33;if(last&&now-last<limit){raf=requestAnimationFrame(step);return;}const dt=last?Math.min(.06,(now-last)/1000):.016;last=now;const live=state.playing&&state.signal&&performance.now()-lastData<1000,input={...state,playing:live};const brushes=handPoints(state.gesture);for(let i=0;i<32;i++){const raw=live?clamp((state.wave?.[i]||0)*state.gain,-3,3):0,k=1-Math.exp(-dt/.08);audioWaveSmooth[i]+=(raw-audioWaveSmooth[i])*k;const target=live?handWave(raw,i/31,brushes):0;waveSmooth[i]+=(target-waveSmooth[i])*k;}const f=motion.tick(input,dt);if(f.onsetLeft>0)lowOnsets++;if(f.onsetRight>0)highOnsets++;lastEye.copy(camera.position);handField.restore();updateScene(f,dt,live&&!state.reduced);moveCamera(f,dt);resize();handField.apply(root,camera,{width:canvas.clientWidth,height:canvas.clientHeight,span:state.span,focus:state.focus},brushes,live?f.energy:0);paint();if(live)raf=requestAnimationFrame(step);}
 function request(){if(!raf&&webgl&&!lost)raf=requestAnimationFrame(step);}
 window.FrontScene={update(next){state={...state,...next};state.mode=Math.floor(clamp(state.mode,0,10));state.filter=Math.floor(clamp(state.filter,0,3));state.gain=clamp(state.gain,.25,4.2);if(!Array.isArray(state.colors)||state.colors.length!==3||state.colors.some(c=>!/^#[0-9a-f]{6}$/i.test(c)))state.colors=['#6fc2be','#798dff','#f08ac8'];lastData=performance.now();
     if(state.mode!==selected)build(state.mode);const colors=state.colors.join('|');if(colors!==paintKey){parts.forEach(tint);paintKey=colors;if(selected===4){build(4);paintKey=colors;}}

@@ -2,87 +2,86 @@ package dev.tossfront.record;
 
 import java.util.*;
 
-/** Temporal gestures from mirrored portrait hand landmarks. No camera or Android dependency. */
+/** Distance-based pinch gestures tolerate sparse landmark samples; no camera/Android dependency. */
 final class HandGestureCore {
     static final class Hand {
         final float[] xy;
-        final float x,y,span,open;
-        final boolean indexOnly;
+        final float x,y,span,open,pinchX,pinchY,pinchRatio;
+        final boolean pinching;
         Hand(float[] values){
             xy=values.clone();float cx=0,cy=0;for(int i:new int[]{0,5,9,13,17}){cx+=xy[i*2];cy+=xy[i*2+1];}
             x=cx/5;y=cy/5;span=Math.max(.025f,distance(5,17));
-            int extended=0;for(int i:new int[]{8,12,16,20})if(extended(i))extended++;
-            // One partly raised adjacent finger is tolerated when the index is extended;
-            // an open palm still cannot become a pointing command.
-            open=extended/4f;indexOnly=extended(8)&&extended<=2;
+            int extended=0;for(int tip:new int[]{8,12,16,20})if(distance(tip,0)>distance(tip-2,0)*1.23f)extended++;
+            open=extended/4f;pinchX=(xy[8]+xy[16])*.5f;pinchY=(xy[9]+xy[17])*.5f;
+            pinchRatio=distance(4,8)/span;pinching=pinchRatio<=.5f;
         }
         float distance(int a,int b){return (float)Math.hypot(xy[a*2]-xy[b*2],xy[a*2+1]-xy[b*2+1]);}
-        boolean extended(int tip){return distance(tip,0)>distance(tip-2,0)*1.23f&&distance(tip,tip-3)>span*.45f;}
-        boolean upright(){return indexOnly&&xy[17]<xy[13]-span*.25f;}
     }
     static final class Output {
-        int volumeDelta;boolean toggle,next;float x=.5f,y=.5f,strength=1,spread=1;int hands;
+        int volumeDelta,navigation,playback,hands,pinches;boolean ready,release;
+        final float[] xs=new float[2],ys=new float[2],powers=new float[2];
     }
-    private static final class Point {final float x,y;final long at;Point(float x,float y,long at){this.x=x;this.y=y;this.at=at;}}
-    private final ArrayList<Point> circle=new ArrayList<>();
-    private long last,volumeAt=-10000,toggleAt=-10000,nextAt=-10000,clapArmedAt,firstFlick,flickAt;
-    private float previousGap,previousX,previousY,palmX,palmY,flickStartX,flickStartY,flickPeak;
-    private boolean clapArmed,hadPoint,strokeReady=true,returning;
-    void reset(){last=0;circle.clear();clapArmed=hadPoint=returning=false;strokeReady=true;firstFlick=0;}
+    private long last,started,missingAt;
+    private int mode,axis;
+    private boolean blocked;
+    private final float[] anchorX=new float[2],anchorY=new float[2],previousX=new float[2],previousY=new float[2];
+    void reset(){last=started=missingAt=0;mode=axis=0;blocked=false;}
+    private void cancel(){mode=axis=0;started=0;}
+    private boolean held(Hand h){
+        if(h.pinching)return true;
+        if(mode==0||h.pinchRatio>.78f)return false;
+        for(int i=0;i<mode;i++)if(Math.hypot(h.pinchX-previousX[i],h.pinchY-previousY[i])<.23)return true;
+        return false;
+    }
     Output update(List<Hand> hands,long now,boolean commands){
-        Output out=new Output();out.hands=hands.size();
-        if(last>0&&(now<=last||now-last>800))reset();
-        float dt=last==0?0:Math.min(.5f,(now-last)/1000f);last=now;
-        if(hands.isEmpty()){circle.clear();hadPoint=false;firstFlick=0;clapArmed=false;return out;}
-        float cx=0,cy=0,open=0;for(Hand h:hands){cx+=h.x;cy+=h.y;open+=h.open;}
-        out.x=cx/hands.size();out.y=cy/hands.size();out.strength=.7f+open/hands.size()*1.4f;
-        Hand pointer=null;int pointers=0;for(Hand candidate:hands)if(candidate.indexOnly){pointer=candidate;pointers++;}
-        if(hands.size()==2){
-            Hand a=hands.get(0),b=hands.get(1);float gap=(float)Math.hypot(a.x-b.x,a.y-b.y),scale=(a.span+b.span)/2;
-            out.spread=bound(.7f+gap*1.1f,.7f,1.55f);
-            boolean facing=pointers==0&&Math.abs(a.y-b.y)<scale*1.8f&&a.open>=.25f&&b.open>=.25f;
-            if(pointers>0)clapArmed=false;
-            if(facing&&gap>Math.max(.18f,scale*2.4f)){clapArmed=true;clapArmedAt=now;}
-            float speed=dt>0?(previousGap-gap)/dt:0;
-            if(commands&&clapArmed&&facing&&now-clapArmedAt<1600&&gap<scale*2.0f&&speed>.3f&&now-toggleAt>1300){out.toggle=true;toggleAt=now;clapArmed=false;}
-            if(now-clapArmedAt>1600)clapArmed=false;
-            previousGap=gap;if(pointers!=1){circle.clear();hadPoint=false;firstFlick=0;return out;}
+        if(last>0&&(now<=last||now-last>800))reset();last=now;
+        Output out=new Output();out.hands=Math.min(2,hands.size());
+        ArrayList<Hand> pinches=new ArrayList<>(2);
+        for(int i=0;i<out.hands;i++){
+            Hand h=hands.get(i);out.xs[i]=h.pinchRatio<=.78f?h.pinchX:h.x;out.ys[i]=h.pinchRatio<=.78f?h.pinchY:h.y;out.powers[i]=.8f+h.open*.6f;
+            if(held(h))pinches.add(h);
         }
-        clapArmed=false;
-        Hand h=pointers==1?pointer:hands.get(0);float x=h.xy[16],y=h.xy[17];
-        if(!h.indexOnly||!commands){circle.clear();hadPoint=false;firstFlick=0;return out;}
-        if(hadPoint&&(Math.hypot(h.x-palmX,h.y-palmY)>.22||Math.hypot(x-previousX,y-previousY)>.3)){circle.clear();hadPoint=false;firstFlick=0;}
-        // Require a closed two-dimensional path; a pair of lateral taps cannot change volume.
-        circle.add(new Point(x,y,now));
-        while(circle.size()>80||circle.size()>1&&now-circle.get(0).at>5000)circle.remove(0);
-        float minX=1,maxX=0,minY=1,maxY=0;
-        for(Point p:circle){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);}
-        float width=maxX-minX,height=maxY-minY;
-        boolean circularMotion=width>.055f&&height>.055f;
-        if(circle.size()>=8&&now-volumeAt>700){
-            if(width>.065f&&height>.065f&&width/height>.5f&&width/height<2){
-                float mx=(minX+maxX)/2,my=(minY+maxY)/2;double turn=0,total=0,prev=0;
-                for(int i=0;i<circle.size();i++){Point p=circle.get(i);double angle=Math.atan2(p.y-my,p.x-mx);if(i>0){double d=angle-prev;while(d>Math.PI)d-=Math.PI*2;while(d< -Math.PI)d+=Math.PI*2;turn+=d;total+=Math.abs(d);}prev=angle;}
-                Point first=circle.get(0),end=circle.get(circle.size()-1);
-                if(Math.abs(turn)>5.0&&Math.abs(turn)>total*.72&&Math.hypot(first.x-end.x,first.y-end.y)<Math.max(width,height)*.45){out.volumeDelta=turn>0?2:-2;volumeAt=now;circle.clear();firstFlick=0;hadPoint=false;}
-            }
+        pinches.sort(Comparator.comparingDouble(h->h.pinchX));out.pinches=pinches.size();
+        if(!commands){cancel();blocked=false;return out;}
+        if(pinches.isEmpty()){
+            // A confirmed open hand releases the latch; a brief model dropout does not rearm it.
+            if(!hands.isEmpty()){cancel();blocked=false;missingAt=0;}
+            else{if(missingAt==0)missingAt=now;if(now-missingAt>600){cancel();blocked=false;}}
+            return out;
         }
-        // Two brisk rightward strokes with a leftward recoil and upright index in between.
-        if(!h.upright()||circularMotion){firstFlick=0;strokeReady=true;returning=false;}
-        else if(out.volumeDelta==0){
-            if(!hadPoint){flickStartX=x;flickStartY=y;flickAt=now;strokeReady=true;}
-            if(firstFlick>0&&now-firstFlick>1100){firstFlick=0;strokeReady=true;flickStartX=x;flickStartY=y;flickAt=now;}
-            if(returning&&x<flickPeak-h.span*.4f){returning=false;strokeReady=true;flickStartX=x;flickStartY=y;flickAt=now;}
-            if(strokeReady){
-                if(now-flickAt>650||Math.abs(y-flickStartY)>h.span*.6f){flickStartX=x;flickStartY=y;flickAt=now;}
-                if(x-flickStartX>Math.max(.055f,h.span*.65f)&&now-flickAt>=60&&now-flickAt<=650&&Math.abs(y-flickStartY)<h.span*.6f){
-                    if(firstFlick>0&&now-firstFlick>=160&&now-firstFlick<1100&&now-nextAt>1500){out.next=true;nextAt=now;firstFlick=0;}
-                    else firstFlick=now;
-                    strokeReady=false;returning=true;flickPeak=x;
-                }
-            }
+        if(missingAt!=0){cancel();missingAt=0;}
+        if(blocked){out.release=true;return out;}
+        int count=pinches.size();
+        // Losing one of two pinches cannot suddenly turn playback control into volume/skip.
+        if(mode==2&&count==1){blocked=true;out.release=true;return out;}
+        if(mode!=count){
+            mode=count;axis=0;started=now;
+            for(int i=0;i<count;i++){Hand h=pinches.get(i);anchorX[i]=previousX[i]=h.pinchX;anchorY[i]=previousY[i]=h.pinchY;}
+            return out;
         }
-        previousX=x;previousY=y;palmX=h.x;palmY=h.y;hadPoint=true;
+        for(int i=0;i<count;i++){
+            Hand h=pinches.get(i);
+            if(Math.hypot(h.pinchX-previousX[i],h.pinchY-previousY[i])>.23){cancel();return out;}
+            previousX[i]=h.pinchX;previousY[i]=h.pinchY;
+        }
+        out.ready=now-started>=(count==2?180:320);
+        if(!out.ready)return out;
+        if(count==2){
+            float dy0=previousY[0]-anchorY[0],dy1=previousY[1]-anchorY[1];
+            boolean vertical=Math.abs(previousX[0]-anchorX[0])<.13f&&Math.abs(previousX[1]-anchorX[1])<.13f;
+            if(vertical&&dy0<-.08f&&dy1<-.08f){out.playback=1;blocked=true;out.release=true;}
+            else if(vertical&&dy0>.08f&&dy1>.08f){out.playback=-1;blocked=true;out.release=true;}
+            return out;
+        }
+        float dx=previousX[0]-anchorX[0],dy=previousY[0]-anchorY[0];
+        if(axis==0){
+            if(Math.abs(dy)>.04f&&Math.abs(dy)>Math.abs(dx)*1.35f)axis=2;
+            else if(Math.abs(dx)>.07f&&Math.abs(dx)>Math.abs(dy)*1.35f)axis=1;
+        }
+        if(axis==2){
+            int steps=(int)(-dy/.045f);out.volumeDelta=Math.max(-2,Math.min(2,steps));
+            if(out.volumeDelta!=0)anchorY[0]-=out.volumeDelta*.045f;
+        }else if(axis==1&&Math.abs(dx)>.11f){out.navigation=dx>0?1:-1;blocked=true;out.release=true;}
         return out;
     }
     static float bound(float v,float lo,float hi){return Math.max(lo,Math.min(hi,Float.isFinite(v)?v:lo));}

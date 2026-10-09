@@ -107,7 +107,7 @@ final class CameraGesture {
             List<HandGestureCore.Hand> hands=tracker.update(grayPixels,ow,oh,now);HandGestureCore.Output output=core.update(hands,now,commands);
             if(++processed==30)main.post(()->{if(current(token))retries=0;});
             if(processed%120==0){android.util.Log.i("FrontRecordHands",String.format(java.util.Locale.ROOT,"tracking_heartbeat flow_fps=%.1f model_fps=%.1f convert_ms=%d infer_ms=%d",120000f/Math.max(1,SystemClock.elapsedRealtime()-rateStart),modelFrames*1000f/Math.max(1,SystemClock.elapsedRealtime()-rateStart),convertCost/120,inferCost/Math.max(1,modelFrames)));rateStart=SystemClock.elapsedRealtime();convertCost=inferCost=0;modelFrames=0;}
-            main.post(()->{if(current(token)){message=hands.isEmpty()?"카메라 켜짐 · 손을 보여 주세요":hands.size()==1&&hands.get(0).indexOnly?"카메라 켜짐 · 손 1개 · 검지 추적":"카메라 켜짐 · 손 "+hands.size()+"개 추적";listener.frame(hands,output);}});
+            main.post(()->{if(current(token)){message=hands.isEmpty()?"카메라 켜짐 · 손을 보여 주세요":output.pinches>0?"핀치 "+output.pinches+"손 · "+(output.release?"손가락을 떼면 다시 준비":output.ready?"조절 준비":"맞댐 확인 중"):"카메라 켜짐 · 손 "+hands.size()+"개 추적";listener.frame(hands,output);}});
         }catch(Exception|LinkageError e){android.util.Log.w("FrontRecordHands","frame_unavailable: "+e.getClass().getSimpleName());fail(token,"손 추적 오류 · 카메라를 다시 켜 주세요");}
         finally{if(image!=null)image.close();}
     }

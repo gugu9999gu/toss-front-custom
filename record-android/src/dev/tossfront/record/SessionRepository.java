@@ -136,6 +136,7 @@ public final class SessionRepository {
         if (playing() && supports(PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_PLAY_PAUSE)) controller.getTransportControls().pause();
         else if (!playing() && supports(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PLAY_PAUSE)) controller.getTransportControls().play();
     }
+    public void play(){if(controller!=null&&!playing()&&supports(PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PLAY_PAUSE))controller.getTransportControls().play();}
     public void pause(){if(controller!=null&&supports(PlaybackState.ACTION_PAUSE|PlaybackState.ACTION_PLAY_PAUSE))controller.getTransportControls().pause();}
     public void seek(long position) { if (supports(PlaybackState.ACTION_SEEK_TO)&&!advertisement()){pendingSeek=requestedSeek=Math.max(0,Math.min(duration(),position));seekAt=SystemClock.elapsedRealtime();seekConfirmed=0;seekMessage="";controller.getTransportControls().seekTo(pendingSeek);notifyObservers();} }
     private void reconcileSeek(){if(pendingSeek<0)return;long now=SystemClock.elapsedRealtime();if(now-seekAt>6000){pendingSeek=-1;seekMessage="이동이 완료되지 않았어요 · 다시 시도해 주세요";seekMessageUntil=now+4500;}else if(playback!=null&&!buffering()&&now-seekAt>600&&Math.abs(playback.getPosition()-pendingSeek)<5000){if(++seekConfirmed>=2)pendingSeek=-1;}else seekConfirmed=0;}

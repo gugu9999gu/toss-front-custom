@@ -63,7 +63,7 @@ export function createRibbonWave(ctx){
     }
     const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(positions,3).setUsage(T.DynamicDrawUsage));g.setIndex(indices);
     const tint=palette(ctx,g,weights);tint();
-    const m=new T.Mesh(g,new T.MeshBasicMaterial({vertexColors:true,side:T.DoubleSide}));m.frustumCulled=false;ctx.root.add(m);strips.push({positions,g,tint,lane});
+    const m=new T.Mesh(g,new T.MeshBasicMaterial({vertexColors:true,side:T.DoubleSide}));m.frustumCulled=false;m.userData.handReactive=true;ctx.root.add(m);strips.push({positions,g,tint,lane});
   }
   ctx.look(0,1.7,8,0,0,0);
   return (f,dt,moving)=>{
@@ -101,7 +101,7 @@ export function createWaveTerrain(ctx){
   const p=g.attributes.position.array,weights=new Float32Array(rows*columns),samples=new Float32Array(32);
   for(let i=0;i<weights.length;i++)weights[i]=(i%columns)/(columns-1);
   const tint=palette(ctx,g,weights);tint();g.attributes.position.setUsage(T.DynamicDrawUsage);
-  const grid=new T.Mesh(g,new T.MeshBasicMaterial({vertexColors:true,wireframe:true}));grid.frustumCulled=false;ctx.root.add(grid);
+  const grid=new T.Mesh(g,new T.MeshBasicMaterial({vertexColors:true,wireframe:true}));grid.frustumCulled=false;grid.userData.handReactive=true;ctx.root.add(grid);
   ctx.look(0,3.4,7.3,0,.1,-.4);
   return (f,dt,moving)=>{
     tint();const ok=active(f,moving);
@@ -116,7 +116,7 @@ export function createWaveTerrain(ctx){
 
 export function createSpectrumFlower(ctx){
   const count=64,geometry=new T.ConeGeometry(.1,.85,5),material=new T.MeshStandardMaterial({color:0xffffff,roughness:.58,metalness:.18});
-  const petals=new T.InstancedMesh(geometry,material,count);petals.frustumCulled=false;ctx.root.add(petals);
+  const petals=new T.InstancedMesh(geometry,material,count);petals.frustumCulled=false;petals.userData.handReactiveInstances=true;ctx.root.add(petals);
   const tint=coloredInstances(ctx,petals,count);tint();
   const core=ctx.gradient(ctx.root,new T.IcosahedronGeometry(.28,1));
   const dirs=Array.from({length:count},(_,i)=>{const y=1-2*(i+.5)/count,r=Math.sqrt(1-y*y),a=i*2.399963;return new T.Vector3(Math.cos(a)*r,y,Math.sin(a)*r);});
@@ -134,12 +134,12 @@ export function createSpectrumFlower(ctx){
 }
 
 export function createDoubleHelix(ctx){
-  const count=64,points=count*2,nodes=new T.InstancedMesh(new T.SphereGeometry(.065,6,4),new T.MeshStandardMaterial({color:0xffffff,roughness:.62}),points);nodes.frustumCulled=false;ctx.root.add(nodes);
+  const count=64,points=count*2,nodes=new T.InstancedMesh(new T.SphereGeometry(.065,6,4),new T.MeshStandardMaterial({color:0xffffff,roughness:.62}),points);nodes.frustumCulled=false;nodes.userData.handReactiveInstances=true;ctx.root.add(nodes);
   const tintNodes=coloredInstances(ctx,nodes,points);tintNodes();
   const positions=new Float32Array(points*3),weights=new Float32Array(points);
   for(let i=0;i<count;i++)weights[i*2]=weights[i*2+1]=i/(count-1);
   const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(positions,3).setUsage(T.DynamicDrawUsage));
-  const tintLines=palette(ctx,g,weights);tintLines();const rungs=new T.LineSegments(g,new T.LineBasicMaterial({vertexColors:true}));rungs.frustumCulled=false;ctx.root.add(rungs);
+  const tintLines=palette(ctx,g,weights);tintLines();const rungs=new T.LineSegments(g,new T.LineBasicMaterial({vertexColors:true}));rungs.frustumCulled=false;rungs.userData.handReactive=true;ctx.root.add(rungs);
   const matrix=new T.Matrix4(),quaternion=new T.Quaternion(),position=new T.Vector3(),scale=new T.Vector3(1,1,1);
   const shape=(phase,live)=>{
     for(let i=0;i<count;i++){

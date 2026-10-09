@@ -15,7 +15,7 @@ final class HandMotionTracker {
         ArrayList<HandGestureCore.Hand> result=new ArrayList<>();if(w!=width||h!=height){clear();return result;}
         byte[] retained=null;
         for(Iterator<Track> it=tracks.iterator();it.hasNext();){Track t=it.next();if(at-t.poseAt>650||at<t.frameAt){it.remove();continue;}
-            int x=Math.round(t.hand.xy[16]*w),y=Math.round(t.hand.xy[17]*h),radius=at-t.frameAt>130?48:20;
+            int x=Math.round((t.hand.pinchRatio<=.78f?t.hand.pinchX:t.hand.xy[16])*w),y=Math.round((t.hand.pinchRatio<=.78f?t.hand.pinchY:t.hand.xy[17])*h),radius=at-t.frameAt>130?48:20;
             int[] next=match(t.image,image,w,h,x,y,radius);
             if(next!=null){
                 float dx=(next[0]-x)/(float)w,dy=(next[1]-y)/(float)h;float[] xy=t.hand.xy.clone();
