@@ -23,6 +23,7 @@ __pycache__/
 *token*.txt
 .env
 config.local.json
+config.local.json.*.tmp
 pairing.json
 node_modules/
 vendor/

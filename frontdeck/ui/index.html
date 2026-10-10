@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#101217">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'">
   <title>FrontDeck</title>
@@ -15,6 +15,7 @@
     <header>
       <div class="heading"><span class="eyebrow">FRONTDECK</span><h1 id="pc-name">내 PC</h1></div>
       <div class="header-actions">
+        <button id="add" class="settings" aria-label="커스텀 버튼 추가" title="커스텀 버튼 추가"></button>
         <button id="music" class="settings music" aria-label="뮤직플레이어 열기" title="뮤직플레이어 열기"></button>
         <button id="settings" class="settings" aria-label="연결 및 설정"></button>
       </div>
@@ -22,8 +23,33 @@
     <div class="connection" role="status"><span class="dot"></span><span id="connection-text">PC 연결 확인 중</span><span id="clock" aria-hidden="true"></span></div>
     <nav id="profiles" aria-label="버튼 모음"></nav>
     <section id="buttons" class="buttons" aria-label="PC 제어 버튼"></section>
+    <div id="pager" class="pager" hidden><button id="page-prev" aria-label="이전 페이지">‹</button><span id="page-number"></span><button id="page-next" aria-label="다음 페이지">›</button></div>
+    <section class="taskbar" aria-label="실행 중인 PC 프로그램">
+      <div class="taskbar-heading"><span>실행 중인 창</span><span id="window-count">0</span></div>
+      <div id="windows" class="windows"><p class="empty-windows">PC 연결 후 열린 창이 표시됩니다</p></div>
+    </section>
     <footer><span id="feedback" role="status">버튼을 눌러 PC를 제어하세요</span><span class="mark">F<span>2</span></span></footer>
   </main>
+  <div id="editor" class="backdrop" hidden>
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+      <div class="sheet-header"><h2 id="editor-title">버튼 추가</h2><button id="editor-close" class="settings" aria-label="편집 닫기">×</button></div>
+      <form id="editor-form">
+        <p class="hint">버튼을 길게 누르면 다시 편집할 수 있어요.</p>
+        <label>버튼 이름<input id="edit-label" maxlength="40" autocomplete="off" enterkeyhint="next" placeholder="예: 메모장 바로가기" required></label>
+        <div class="field-row"><label>아이콘<select id="edit-icon"></select></label><label>색상<select id="edit-tone"><option value="blue">파랑</option><option value="violet">보라</option><option value="green">초록</option><option value="slate">차콜</option><option value="red">빨강</option></select></label></div>
+        <label>버튼 모음<select id="edit-profile"></select></label>
+        <label>동작<select id="edit-type"><option value="application">PC 앱 목록에서 선택</option><option value="launch">실행 파일 직접 등록</option><option value="hotkey">단축키</option><option value="media">미디어 제어</option><option value="url">웹사이트 열기</option></select></label>
+        <div data-fields="application"><label>앱 검색<input id="app-search" type="search" autocomplete="off" placeholder="PC에 설치된 앱 검색"></label><label>실행할 앱<select id="edit-app"></select></label><p id="app-status" class="hint"></p></div>
+        <div data-fields="launch" hidden><label>PC 실행 파일 경로<input id="edit-exe" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="실행 파일의 전체 경로 (.exe)"></label><label>실행 인수 (선택)<textarea id="edit-args" rows="2" autocapitalize="off" spellcheck="false" placeholder='예: ["--profile", "work"]'></textarea></label></div>
+        <label id="focus-option" class="check"><input id="edit-focus" type="checkbox" checked><span>실행 중이면 창을 앞으로 가져오기</span></label>
+        <div data-fields="hotkey" hidden><label>단축키<input id="edit-keys" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="예: CTRL+SHIFT+S"></label><p class="hint">CTRL · ALT · SHIFT · WIN과 영문·숫자·F1~F24 등을 조합합니다.</p></div>
+        <div data-fields="media" hidden><label>미디어 동작<select id="edit-media"><option value="PLAY_PAUSE">재생 / 일시정지</option><option value="NEXT">다음 곡</option><option value="PREVIOUS">이전 곡</option><option value="STOP">정지</option><option value="VOLUME_UP">볼륨 올리기</option><option value="VOLUME_DOWN">볼륨 내리기</option><option value="MUTE">음소거</option></select></label></div>
+        <div data-fields="url" hidden><label>웹사이트 주소<input id="edit-url" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://example.com"></label></div>
+        <p id="editor-message" class="message" role="status"></p>
+        <div class="form-actions"><button id="delete" type="button" class="danger" hidden>삭제</button><button id="save" type="submit" class="primary">저장</button></div>
+      </form>
+    </section>
+  </div>
   <script type="application/json" id="fallback">{"name":"내 PC","profiles":[{"id":"work","name":"작업","actions":[{"id":"notepad","label":"메모장","icon":"note","tone":"blue"},{"id":"calculator","label":"계산기","icon":"calculator","tone":"blue"},{"id":"explorer","label":"파일 탐색기","icon":"folder","tone":"blue"},{"id":"desktop","label":"바탕 화면","icon":"desktop","tone":"slate"},{"id":"taskview","label":"창 전환","icon":"windows","tone":"slate"},{"id":"capture","label":"화면 캡처","icon":"capture","tone":"violet"},{"id":"copy","label":"복사","icon":"copy","tone":"slate"},{"id":"paste","label":"붙여넣기","icon":"paste","tone":"slate"},{"id":"undo","label":"실행 취소","icon":"undo","tone":"slate"},{"id":"find","label":"찾기","icon":"search","tone":"slate"},{"id":"newtab","label":"새 탭","icon":"plus","tone":"slate"},{"id":"escape","label":"닫기 / 취소","icon":"escape","tone":"red"}]},{"id":"media","name":"미디어","actions":[{"id":"previous","label":"이전 곡","icon":"previous","tone":"green"},{"id":"play","label":"재생 / 일시정지","icon":"play","tone":"green"},{"id":"next","label":"다음 곡","icon":"next","tone":"green"},{"id":"quieter","label":"볼륨 −","icon":"volume-down","tone":"slate"},{"id":"mute","label":"음소거","icon":"mute","tone":"red"},{"id":"louder","label":"볼륨 +","icon":"volume-up","tone":"slate"},{"id":"back","label":"뒤로","icon":"back","tone":"slate"},{"id":"fullscreen","label":"전체 화면","icon":"fullscreen","tone":"violet"},{"id":"forward","label":"앞으로","icon":"forward","tone":"slate"},{"id":"refresh","label":"새로고침","icon":"refresh","tone":"slate"},{"id":"youtube","label":"YouTube","icon":"video","tone":"red"},{"id":"explorer","label":"파일 탐색기","icon":"folder","tone":"blue"}]}]}</script>
 </body>
 </html>

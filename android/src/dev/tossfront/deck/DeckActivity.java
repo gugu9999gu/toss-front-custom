@@ -38,6 +38,7 @@ public final class DeckActivity extends Activity {
         super.onCreate(state);
         preferences = getSharedPreferences("connection", MODE_PRIVATE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         prepareDashboardWindow();
         if (Build.VERSION.SDK_INT >= 28) {
             WindowManager.LayoutParams layout = getWindow().getAttributes();
@@ -103,7 +104,7 @@ public final class DeckActivity extends Activity {
     @Override public void onWindowFocusChanged(boolean focus) { super.onWindowFocusChanged(focus); if (focus) immersive(); }
     @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent); setIntent(intent); consumePairingIntent(intent); }
     @Override protected void onResume() { super.onResume(); dismissUnsecuredKeyguard(); if (web != null) refresh(); }
-    @Override public void onBackPressed() { showSettings(); }
+    @Override public void onBackPressed() { web.evaluateJavascript("window.FrontDeck && window.FrontDeck.back()", null); }
     @Override protected void onDestroy() {
         destroyed = true; network.shutdownNow();
         web.removeJavascriptInterface("NativeDeck"); web.destroy();
@@ -139,18 +140,19 @@ public final class DeckActivity extends Activity {
         return result;
     }
     private JSONObject call(String route, JSONObject body) throws Exception {
-        if (!route.equals("config") && !route.equals("action") && !route.equals("pair")) return error("지원하지 않는 요청입니다.");
+        boolean read = route.equals("config") || route.equals("windows") || route.equals("apps") || route.equals("editor");
+        if (!read && !route.equals("action") && !route.equals("pair") && !route.equals("focus") && !route.equals("save") && !route.equals("delete")) return error("지원하지 않는 요청입니다.");
         String token = preferences.getString("token", "");
         if (!route.equals("pair") && token.isEmpty()) return error("설정에서 PC 연결 코드를 입력하세요.");
         HttpURLConnection connection = (HttpURLConnection) new URL("http://127.0.0.1:38765/api/" + route).openConnection();
-        connection.setConnectTimeout(1800); connection.setReadTimeout(1800);
+        connection.setConnectTimeout(1800); connection.setReadTimeout(3500);
         connection.setInstanceFollowRedirects(false);
         connection.setRequestProperty("Accept", "application/json");
         if (!route.equals("pair")) connection.setRequestProperty("Authorization", "Bearer " + token);
         try {
-            if (!route.equals("config")) {
+            if (!read) {
                 byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                if (bytes.length > 2048) return error("요청이 너무 큽니다.");
+                if (bytes.length > (route.equals("save") ? 8192 : 2048)) return error("요청이 너무 큽니다.");
                 connection.setRequestMethod("POST"); connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setFixedLengthStreamingMode(bytes.length);
@@ -161,7 +163,7 @@ public final class DeckActivity extends Activity {
             if (stream == null) return error("PC 연결을 확인하세요.");
             try (InputStream in = stream; ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 byte[] buffer = new byte[4096]; int count;
-                while ((count = in.read(buffer)) != -1) { if (out.size() + count > 65536) return error("잘못된 PC 응답입니다."); out.write(buffer, 0, count); }
+                while ((count = in.read(buffer)) != -1) { if (out.size() + count > 4194304) return error("잘못된 PC 응답입니다."); out.write(buffer, 0, count); }
                 return new JSONObject(new String(out.toByteArray(), StandardCharsets.UTF_8));
             }
         } finally { connection.disconnect(); }
@@ -196,8 +198,9 @@ public final class DeckActivity extends Activity {
     }
     public final class Bridge {
         @JavascriptInterface public void request(final String id, final String route, final String raw) {
-            if (id == null || !id.matches("[0-9]{1,10}") || raw == null || raw.length() > 2048 ||
-                (!"config".equals(route) && !"action".equals(route))) return;
+            if (id == null || !id.matches("[0-9]{1,10}") || raw == null || raw.length() > 8192 ||
+                (!"config".equals(route) && !"action".equals(route) && !"windows".equals(route) && !"apps".equals(route) &&
+                 !"editor".equals(route) && !"focus".equals(route) && !"save".equals(route) && !"delete".equals(route))) return;
             network.execute(() -> {
                 JSONObject result;
                 try { result = call(route, new JSONObject(raw)); }

@@ -1,12 +1,15 @@
 import ctypes
 from http.client import HTTPConnection
 import json
+import os
 from pathlib import Path
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from frontdeck.server import Controller, FrontDeckServer, WindowsExecutor, load_config, public_config
+from frontdeck.desktop import AppCatalog, Desktop, valid_app_id
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -86,6 +89,155 @@ class ConfigTests(unittest.TestCase):
                 data = json.loads(json.dumps(original)); data["actions"][0].update(replacement)
                 file.write_text(json.dumps(data), encoding="utf-8")
                 with self.assertRaises(ValueError): load_config(file)
+
+    @unittest.skipUnless(os.name == "nt", "Verify installed Windows shell")
+    def test_catalog_and_file_manager_launch_use_existing_shell_executable(self):
+        desktop = Desktop.__new__(Desktop)
+        with patch("frontdeck.desktop.subprocess.Popen") as launch:
+            desktop.launch({"type": "app", "app_id": "Example_abcdefgh!App"})
+            command = launch.call_args.args[0]
+            self.assertTrue(Path(command[0]).is_file())
+            self.assertEqual(command[1], "shell:AppsFolder\\Example_abcdefgh!App")
+            self.assertFalse(launch.call_args.kwargs["shell"])
+            desktop.launch({"type": "launch", "executable": "explorer.exe"})
+            self.assertTrue(Path(launch.call_args.args[0][0]).is_file())
+
+    def test_packaged_window_matching_uses_app_identity(self):
+        desktop = Desktop.__new__(Desktop)
+        other = {"id": "other", "app_id": "Other!App", "executable": "", "app": "ApplicationFrameHost", "active": True}
+        target = {"id": "calc", "app_id": "Calculator!App", "executable": "", "app": "CalculatorApp", "active": False}
+        desktop.windows = lambda: [other, target]
+        self.assertIs(desktop.existing("", "Calculator!App"), target)
+        self.assertIsNone(desktop.existing("", "Closed!App"))
+
+    def test_taskbar_names_do_not_expose_packaged_process_metadata(self):
+        desktop = Desktop.__new__(Desktop); desktop.catalog = AppCatalog()
+        desktop.catalog.items["app"] = {"id": "app", "name": "Calculator", "app_id": "Calculator!App"}
+        desktop.windows = lambda: [{"id": "calc", "app_id": "Calculator!App", "executable": "private-path.exe", "pid": 123,
+                                   "hwnd": 456, "app": "CalculatorApp", "title": "Calculator", "active": False, "minimized": True}]
+        result = desktop.public_windows()["windows"][0]
+        self.assertEqual(result["app"], "Calculator")
+        for field in ("app_id", "executable", "pid", "hwnd"):
+            self.assertNotIn(field, result)
+
+
+class FakeDesktop:
+    def __init__(self):
+        self.catalog = AppCatalog()
+        self.catalog.updated = float("inf")
+        self.ids = ["live-window"]
+        self.focused = []
+    def public_windows(self):
+        return {"windows": [{"id": i, "title": "Example", "app": "notepad", "active": False, "minimized": True} for i in self.ids]}
+    def focus(self, identifier):
+        if identifier not in self.ids:
+            raise LookupError("Closed")
+        self.focused.append(identifier)
+        return {"ok": True, "focused": True}
+
+
+class EditingTests(unittest.TestCase):
+    call = ApiTests.call
+    def setUp(self):
+        ApiTests.setUp(self)
+        self.folder = tempfile.TemporaryDirectory()
+        self.path = Path(self.folder.name) / "config.local.json"
+        self.path.write_bytes((ROOT / "frontdeck/config.example.json").read_bytes())
+        self.executor.dry_run = False
+        self.desktop = FakeDesktop()
+        self.controller.config_path = self.path
+        self.controller.desktop = self.desktop
+    def tearDown(self):
+        ApiTests.tearDown(self); self.folder.cleanup()
+    def save(self, action=None, request_id="edit_request_001", profile="custom"):
+        return {"action": action or {"id": "", "label": "My app", "icon": "desktop", "tone": "blue", "type": "application",
+                                     "application_id": "builtin-notepad", "focus_existing": True},
+                "profile_id": profile, "request_id": request_id}
+    def test_edit_routes_require_native_authentication(self):
+        for route in ("windows", "apps", "editor"):
+            self.assertEqual(self.call("/api/" + route)[0], 401)
+            self.assertEqual(self.call("/api/" + route, authenticated=True)[0], 200)
+            self.assertEqual(self.call("/api/" + route, authenticated=True, headers={"Origin": "https://example.com"})[0], 403)
+        for route, body in (("save", self.save()), ("delete", {"id": "notepad", "request_id": "delete_001"}),
+                            ("focus", {"id": "live-window", "request_id": "focus_001"})):
+            self.assertEqual(self.call("/api/" + route, body)[0], 401)
+            self.assertEqual(self.call("/api/" + route, body, True, {"Origin": "http://localhost"})[0], 403)
+    def test_save_is_persistent_and_retries_do_not_duplicate(self):
+        body = self.save()
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            results = list(pool.map(lambda _: self.call("/api/save", body, True), range(3)))
+        self.assertTrue(all(status == 200 for status, _ in results))
+        saved = load_config(self.path)
+        self.assertEqual(len(saved["actions"]), len(self.config["actions"]) + 1)
+        profile = next(p for p in saved["profiles"] if p["id"] == "custom")
+        self.assertEqual(len(profile["actions"]), 1)
+        action = saved["actions"][profile["actions"][0]]
+        self.assertTrue(action["focus_existing"]); self.assertEqual(action["executable"], "notepad.exe")
+        self.assertEqual(self.call("/api/save", self.save(request_id=body["request_id"], profile="work"), True)[0], 409)
+    def test_update_delete_and_empty_profile_are_preserved(self):
+        action = {"id": "explorer", "label": "Files", "type": "application", "application_id": "builtin-explorer", "focus_existing": True}
+        self.assertEqual(self.call("/api/save", self.save(action, profile="work"), True)[0], 200)
+        self.assertEqual(load_config(self.path)["actions"]["explorer"]["label"], "Files")
+        self.assertEqual(self.call("/api/delete", {"id": "explorer", "request_id": "delete_explorer"}, True)[0], 200)
+        config = load_config(self.path)
+        self.assertNotIn("explorer", config["actions"])
+        self.assertTrue(all("explorer" not in p["actions"] for p in config["profiles"]))
+    def test_invalid_edit_never_changes_disk_or_memory(self):
+        before = self.path.read_bytes()
+        for index, change in enumerate(({"type": "shell", "command": "cmd.exe"}, {"type": "application", "application_id": "arbitrary.exe"},
+                                        {"type": "hotkey", "keys": ["CTRL", "BOGUS"]}, {"type": "url", "url": "file:///C:/secret"},
+                                        {"type": []}, {"type": "launch", "executable": []}, {"tone": []})):
+            action = self.save()["action"].copy()
+            # Remove type-specific fields before switching action type.
+            for key in ("application_id", "focus_existing"): action.pop(key, None)
+            action.update(change)
+            self.assertEqual(self.call("/api/save", self.save(action, "bad_edit_" + str(index)), True)[0], 400)
+            self.assertEqual(self.path.read_bytes(), before)
+            self.assertEqual(self.controller.config, self.config)
+    def test_failed_atomic_write_keeps_previous_settings(self):
+        before = self.path.read_bytes()
+        with patch("frontdeck.server.os.replace", side_effect=OSError("Read-only")):
+            self.assertEqual(self.call("/api/save", self.save(), True)[0], 500)
+        self.assertEqual(self.path.read_bytes(), before); self.assertEqual(self.controller.config, self.config)
+        self.assertEqual(list(self.path.parent.glob("*.tmp")), [])
+    def test_more_than_twelve_buttons_and_full_profile_limit(self):
+        for n in range(36):
+            self.assertEqual(self.call("/api/save", self.save(request_id="page_edit_" + str(n), profile="work"), True)[0], 200)
+            # Tests are faster than real taps; reset the per-second action quota between edits.
+            self.controller.action_times = []
+        self.assertEqual(len(load_config(self.path)["profiles"][0]["actions"]), 48)
+        before = self.path.read_bytes()
+        self.assertEqual(self.call("/api/save", self.save(request_id="over_capacity", profile="work"), True)[0], 400)
+        self.assertEqual(self.path.read_bytes(), before)
+    def test_live_window_focus_is_deduplicated_and_stale_ids_rejected(self):
+        body = {"id": "live-window", "request_id": "focus_live_001"}
+        self.assertEqual(self.call("/api/focus", body, True)[0], 200)
+        self.assertEqual(self.call("/api/focus", body, True)[0], 200)
+        self.assertEqual(self.desktop.focused, ["live-window"])
+        self.desktop.ids.clear()
+        self.assertEqual(self.call("/api/focus", {**body, "request_id": "focus_closed_001"}, True)[0], 404)
+        self.assertEqual(self.call("/api/focus", {**body, "id": 123, "request_id": "focus_hwnd_001"}, True)[0], 400)
+    def test_preview_mode_cannot_edit_or_focus(self):
+        self.executor.dry_run = True
+        self.assertEqual(self.call("/api/save", self.save(), True)[0], 403)
+        self.assertEqual(self.call("/api/focus", {"id": "live-window", "request_id": "focus_preview_001"}, True)[0], 403)
+        self.assertFalse(self.desktop.focused)
+    def test_catalog_only_returns_ids_and_labels(self):
+        status, raw = self.call("/api/apps", authenticated=True)
+        self.assertEqual(status, 200)
+        self.assertNotIn(b"executable", raw); self.assertNotIn(b"app_id", raw)
+        self.assertFalse(valid_app_id("shell:AppsFolder")); self.assertFalse(valid_app_id("https://example.com"))
+    def test_installed_application_uses_only_catalog_metadata(self):
+        self.desktop.catalog.items["known-app"] = {"id": "known-app", "name": "Example", "app_id": "Example_abcdefgh!App"}
+        action = self.save()["action"]
+        action["application_id"] = "known-app"
+        self.assertEqual(self.call("/api/save", self.save(action), True)[0], 200)
+        stored = load_config(self.path)
+        new_id = next(p for p in stored["profiles"] if p["id"] == "custom")["actions"][0]
+        self.assertEqual(stored["actions"][new_id]["app_id"], "Example_abcdefgh!App")
+        self.assertEqual(stored["actions"][new_id]["type"], "app")
+        action["app_id"] = "https://example.com"
+        self.assertEqual(self.call("/api/save", self.save(action, "invalid_raw_appid"), True)[0], 400)
 
 class FakeFunction:
     def __init__(self, call): self.call = call
