@@ -32,7 +32,9 @@ nav button[aria-pressed=true] { background: #303746; color: #f5f6f9; box-shadow:
 #window-count { color: #5f799c; font-variant-numeric: tabular-nums; }
 .windows { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior: contain; touch-action: pan-x; scrollbar-width: none; min-height: 60px; padding-bottom: 3px; }
 .windows::-webkit-scrollbar { display: none; }
-.window { position: relative; flex: 0 0 132px; height: 58px; padding: 9px 12px; text-align: left; border-radius: 12px; background: #1a202b; border: 1px solid #2c3645; min-width: 0; }
+.window { position: relative; flex: 0 0 155px; height: 58px; padding: 9px 12px 9px 48px; text-align: left; border-radius: 12px; background: #1a202b; border: 1px solid #2c3645; min-width: 0; }
+.window-icon { position: absolute; left: 12px; top: 15px; width: 28px; height: 28px; color: #8aa0be; }
+.window-icon img, .tile .icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .window.active { border-color: #548fd4; background: #203149; }
 .window-app { display: block; padding-right: 10px; font-size: 12px; font-weight: 600; color: #c9d8ed; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .window-title { display: block; font-size: 10px; margin-top: 4px; color: #8293ac; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -73,6 +75,7 @@ footer { display: flex; align-items: center; gap: 8px; height: 42px; padding-top
 @media (min-width: 550px) { .deck { padding: 36px 32px 22px; } h1 { font-size: 38px; }.connection { font-size: 15px; } nav button { height: 54px; font-size: 18px; }.buttons { gap: 14px; }.tile { border-radius: 23px; }.tile .icon { width: 48px; height: 48px; } footer { height: 55px; } #feedback { font-size: 14px; } }
 @media (max-height: 550px) { .deck { padding-top: 12px; padding-bottom: 8px; } header { margin-bottom: 8px; } h1 { font-size: 22px; }.eyebrow { display: none; }.connection { margin-bottom: 8px; } nav { margin-bottom: 8px; } nav button { height: 32px; }.buttons { gap: 6px; }.tile { gap: 5px; padding: 4px; border-radius: 12px; }.tile .icon { width: 22px; height: 22px; }.tile .label { font-size: 11px; } footer { height: 30px; padding-top: 8px; } }
 @media (max-height: 550px) { .taskbar { margin-top: 8px; }.window { height: 48px; }.windows { min-height: 50px; }.taskbar-heading { margin-bottom: 4px; } }
+@media (max-height: 550px) { .window-icon { top: 10px; } }
 @media (max-height: 700px) { .tile { gap: 5px; padding: 4px; }.tile .icon { width: 22px; height: 22px; flex-shrink: 0; }.tile .label { font-size: 12px; line-height: 1.2; } }
 @media (hover: hover) and (pointer: fine) { .tile:hover:enabled { filter: brightness(1.13); }.settings:hover { background: #2b3240; } }
 @media (prefers-reduced-motion: reduce) { .tile { transition: none; }.tile:active, .tile.pressed { transform: none; } }

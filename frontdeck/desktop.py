@@ -86,6 +86,8 @@ def valid_app_id(value):
 class Desktop:
     def __init__(self):
         self.catalog = AppCatalog()
+        from .app_icons import IconCache
+        self.icons = IconCache()
         self.user = ctypes.WinDLL("user32", use_last_error=True)
         self.kernel = ctypes.WinDLL("kernel32", use_last_error=True)
         self.dwm = ctypes.WinDLL("dwmapi", use_last_error=True)
@@ -197,8 +199,16 @@ class Desktop:
         for row in self.windows():
             public = {k: row[k] for k in ("id", "title", "app", "active", "minimized")}
             public["app"] = labels.get(row["app_id"].casefold(), builtins.get(row["app"].casefold(), row["app"]))
+            cache = getattr(self, 'icons', None)
+            public['image'] = cache.get('window:' + row['id'], executable=row.get('executable', ''), app_id=row.get('app_id', ''), hwnd=row.get('hwnd', 0)) if cache else ''
             result.append(public)
         return {"windows": result}
+
+    def action_image(self, action):
+        if action['type'] not in {'launch', 'app'}: return ''
+        executable, application = action.get('executable', ''), action.get('app_id', '')
+        if executable in {'notepad.exe', 'calc.exe', 'explorer.exe', 'mspaint.exe'}: executable = str(builtin_path(executable))
+        return self.icons.get('app:' + app_key(application + '|' + executable), executable=executable, app_id=application)
 
     def focus(self, identifier):
         row = next((w for w in self.windows() if w["id"] == identifier), None)

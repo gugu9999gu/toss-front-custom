@@ -28,7 +28,7 @@ def main():
     tools, android = args.sdk / "build-tools" / args.build_tools, args.sdk / "platforms" / args.platform / "android.jar"
     if not android.is_file(): raise SystemExit("Android SDK platform is missing")
     configurations = {
-        "deck": ("FrontDeck", "dev.tossfront.deck", "frontdeck", "android", "android", "1.2.0", "24"),
+        "deck": ("FrontDeck", "dev.tossfront.deck", "frontdeck", "android", "android", "1.3.1", "24"),
         "audio": ("FrontAudio", "dev.tossfront.audio", "frontaudio", "audio-android", "audio", "1.0.0", "26"),
         "record": ("FrontRecord", "dev.tossfront.record", "frontrecord", "record-android", "record", "1.9.8", "26"),
         "youtubeweb": ("YouTube-Web", "local.tossfront.youtubeweb", "youtubeweb", "youtube-web-android", "youtubeweb", "2.3", "26"),

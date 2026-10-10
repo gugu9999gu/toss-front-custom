@@ -1,10 +1,11 @@
-"""Loopback-only, authenticated Windows actions; Python 3.11+, no dependencies."""
+"""Authenticated Windows actions over USB loopback or optional pinned LAN TLS."""
 from __future__ import annotations
 
 import argparse
 import ctypes
 from ctypes import wintypes
 import hmac
+import html
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -17,7 +18,7 @@ import sys
 import tempfile
 import threading
 import time
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -186,6 +187,27 @@ class Controller:
         self.action_times = []
         self.config_path = Path(config_path) if config_path is not None else None
         self.desktop = desktop if desktop is not None else getattr(executor, "desktop", None)
+        self.wireless = None
+        self.lan_requests = 0
+        self.lan_last_peer = None
+        self.bootstrap_path = None
+        self.setup_nonce = secrets.token_urlsafe(32)
+
+    def note_wireless_request(self, peer):
+        with self.lock:
+            self.lan_requests += 1
+            self.lan_last_peer = peer
+
+    def renew_pairing(self):
+        with self.lock:
+            pin = ''.join(secrets.choice('0123456789') for _ in range(8))
+            if self.bootstrap_path:
+                saved = json.loads(self.bootstrap_path.read_text(encoding='utf-8'))
+                saved.update(pin=pin, expires_at=time.time() + 300)
+                self.bootstrap_path.write_text(json.dumps(saved), encoding='utf-8')
+            self.pin = pin
+            self.pin_deadline = time.monotonic() + 300
+            self.pair_attempts = []
 
     def read(self, route):
         if route == "windows":
@@ -194,11 +216,19 @@ class Controller:
             return 200, self.desktop.catalog.snapshot() if self.desktop else {"apps": [], "loading": False}
         with self.lock:
             if route == "config":
-                return 200, public_config(self.config)
+                return 200, self.panel_config()
             if route == "editor":
                 return 200, {"profiles": self.config["profiles"], "actions": self.config["actions"],
                              "writable": self.config_path is not None and not self.executor.dry_run}
         return 404, {"error": "Not found"}
+
+    def panel_config(self):
+        result = public_config(self.config)
+        if self.desktop and hasattr(self.desktop, 'action_image'):
+            for profile in result['profiles']:
+                for action in profile['actions']:
+                    action['image'] = self.desktop.action_image(self.config['actions'][action['id']])
+        return result
 
     def persist(self, candidate):
         """Commit disk first, then memory; a failed write keeps the old configuration."""
@@ -281,7 +311,7 @@ class Controller:
                 return 400, {"error": "설정값을 확인하세요. 버튼은 모음당 48개, 단축키는 최대 5개입니다."}
             except OSError:
                 return 500, {"error": "PC에 버튼 설정을 저장하지 못했습니다."}
-            return 200, {"ok": True, "config": public_config(self.config)}
+            return 200, {"ok": True, "config": self.panel_config()}
         return self.once(body["request_id"], route + ":" + json.dumps(body, sort_keys=True), edit)
 
     def focus(self, body):
@@ -345,8 +375,10 @@ class Controller:
 class FrontDeckServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
-    def __init__(self, address, controller):
+    def __init__(self, address, controller, tls_context=None):
         self.controller = controller
+        self.tls_context = tls_context
+        self.is_wireless = tls_context is not None
         super().__init__(address, Handler, bind_and_activate=False)
         try:
             if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
@@ -356,6 +388,17 @@ class FrontDeckServer(ThreadingHTTPServer):
         except Exception:
             self.server_close()
             raise
+
+    def get_request(self):
+        connection, address = super().get_request()
+        connection.settimeout(5)
+        if self.tls_context:
+            try:
+                connection = self.tls_context.wrap_socket(connection, server_side=True)
+            except Exception:
+                connection.close()
+                raise
+        return connection, address
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -370,22 +413,49 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(payload)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(payload)
 
     def valid_host(self):
-        expected = {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"}
+        expected = {f"{self.server.server_address[0]}:{self.server.server_port}"}
+        if not self.server.is_wireless:
+            expected.add(f"localhost:{self.server.server_port}")
         return self.headers.get("Host") in expected
 
     def authorized(self):
         value = self.headers.get("Authorization", "")
-        return hmac.compare_digest(value.encode(), ("Bearer " + self.server.controller.token).encode())
+        valid = hmac.compare_digest(value.encode(), ("Bearer " + self.server.controller.token).encode())
+        if valid and self.server.is_wireless:
+            self.server.controller.note_wireless_request(self.client_address[0])
+        return valid
+
+    def connection_page(self):
+        from frontdeck.wireless import confirmation_code
+        c = self.server.controller
+        if not c.wireless:
+            return self.reply(200, '<html lang="ko"><meta charset="utf-8"><p>PC 프로그램을 -Wireless 옵션으로 실행하세요.</p></html>'.encode(), 'text/html; charset=utf-8')
+        address = html.escape(c.wireless['host'])
+        code = confirmation_code(c.wireless['fingerprint'])
+        with c.lock:
+            pin = c.pin if time.monotonic() < c.pin_deadline else '만료됨'
+        body = f'''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FrontDeck 무선 연결</title><style>body{{font:17px system-ui;background:#101217;color:#eef3f7;margin:0;padding:48px 24px}}main{{max-width:560px;margin:auto}}h1{{font-size:32px}}small,p{{color:#aab7c6;line-height:1.7}}section{{padding:22px;background:#1c222b;border-radius:18px;margin:16px 0}}b{{display:block;font-size:28px;letter-spacing:2px;margin:8px 0}}button{{font:inherit;border:0;border-radius:12px;background:#70dcb3;color:#09251b;padding:14px 20px;cursor:pointer}}</style>
+<main><small>FRONTDECK</small><h1>Wi-Fi로 PC 연결</h1><p>기기를 같은 공유기의 Wi-Fi에 연결하고 FrontDeck 설정 → Wi-Fi 연결을 열어 주세요. PC는 유선 LAN으로 연결돼 있어도 됩니다.</p>
+<section>PC 주소<b>{address}</b>연결 코드 · 5분<b>{pin}</b></section><section>기기 확인 코드<b>{code}</b><p>기기에 표시되는 코드와 같으면 연결을 완료하세요.</p></section>
+<form method="post" action="/connect/renew"><input type="hidden" name="nonce" value="{c.setup_nonce}"><button>새 연결 코드</button></form><p>한 번 연결하면 주소와 연결 정보가 기기에 저장됩니다. PC 프로그램과 기기의 네트워크 연결을 유지해 주세요.</p></main></html>'''
+        return self.reply(200, body.encode('utf-8'), 'text/html; charset=utf-8')
 
     def do_GET(self):
         if not self.valid_host():
             return self.reply(403, {"error": "Invalid host"})
         if self.path == "/api/health":
-            return self.reply(200, {"ok": True, "app": "FrontDeck", "dry_run": self.server.controller.executor.dry_run})
+            c = self.server.controller
+            result = {"ok": True, "app": "FrontDeck", "dry_run": c.executor.dry_run, "wireless_enabled": c.wireless is not None}
+            if not self.server.is_wireless:
+                result.update(wireless=c.wireless, wireless_authenticated_requests=c.lan_requests, wireless_last_peer=c.lan_last_peer)
+            return self.reply(200, result)
         if self.path in {"/api/config", "/api/windows", "/api/apps", "/api/editor"}:
             if self.headers.get("Origin") is not None:
                 return self.reply(403, {"error": "Native paired client required"})
@@ -396,6 +466,10 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 status, result = 500, {"error": "PC 목록을 불러오지 못했습니다."}
             return self.reply(status, result)
+        if self.server.is_wireless:
+            return self.reply(404, {"error": "Not found"})
+        if self.path == "/connect/":
+            return self.connection_page()
         if self.path == "/":
             self.send_response(302)
             self.send_header("Location", "/preview/")
@@ -415,6 +489,21 @@ class Handler(BaseHTTPRequestHandler):
         return self.reply(404, {"error": "Not found"})
 
     def do_POST(self):
+        if self.path == '/connect/renew':
+            if self.server.is_wireless or not self.valid_host() or self.headers.get('Origin') not in (None, 'http://' + self.headers.get('Host', '')):
+                return self.reply(403, {'error': 'Local connection setup required'})
+            try:
+                size = int(self.headers.get('Content-Length', '0'))
+                if not 0 < size <= 256 or self.headers.get('Transfer-Encoding'):
+                    raise ValueError()
+                body = parse_qs(self.rfile.read(size).decode('ascii'))
+                if set(body) != {'nonce'} or len(body['nonce']) != 1 or not hmac.compare_digest(body['nonce'][0], self.server.controller.setup_nonce):
+                    raise ValueError()
+            except (ValueError, OSError):
+                return self.reply(403, {'error': 'Invalid setup request'})
+            self.server.controller.renew_pairing()
+            self.send_response(303); self.send_header('Location', '/connect/'); self.send_header('Content-Length', '0'); self.end_headers()
+            return
         if not self.valid_host() or self.headers.get("Origin") is not None:
             return self.reply(403, {"error": "Native paired client required"})
         if self.path not in {"/api/pair", "/api/action", "/api/focus", "/api/save", "/api/delete"}:
@@ -435,6 +524,8 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(body, dict) or set(body) != {"pin"}:
                 return self.reply(400, {"error": "Invalid pairing request"})
             status, result = self.server.controller.pair(body["pin"])
+            if status == 200 and self.server.is_wireless:
+                self.server.controller.note_wireless_request(self.client_address[0])
         elif self.path == "/api/action":
             status, result = self.server.controller.action(body)
         elif self.path == "/api/focus":
@@ -450,6 +541,8 @@ def main():
     parser.add_argument("--state-dir", type=Path, default=Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local/share")) / "FrontDeck")
     parser.add_argument("--port", type=int, default=38765)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument('--lan-host', help='사설 LAN IPv4 주소에 TLS 무선 연결을 추가합니다.')
+    parser.add_argument('--lan-port', type=int, default=38766)
     args = parser.parse_args()
     if not args.config.exists() and args.config == Path(__file__).with_name("config.local.json"):
         args.config.write_bytes(Path(__file__).with_name("config.example.json").read_bytes())
@@ -467,14 +560,34 @@ def main():
     pin = "".join(secrets.choice("0123456789") for _ in range(8))
     controller = Controller(config, token, pin, WindowsExecutor(args.dry_run), args.config)
     server = FrontDeckServer(("127.0.0.1", args.port), controller)
-    (args.state_dir / "bootstrap.json").write_text(json.dumps({"pin": pin, "port": args.port, "expires_at": time.time() + 300, "pid": os.getpid()}), encoding="utf-8")
+    wireless_server = None
+    try:
+        if args.lan_host:
+            from frontdeck.wireless import ensure_identity, lan_address
+            host = lan_address(args.lan_host)
+            if not 1024 <= args.lan_port <= 65535 or args.lan_port == args.port:
+                raise ValueError('무선 포트는 USB 포트와 다른 1024–65535 범위여야 합니다.')
+            context, fingerprint = ensure_identity(args.state_dir, host)
+            wireless_server = FrontDeckServer((host, args.lan_port), controller, context)
+            controller.wireless = {'host': host, 'port': args.lan_port, 'fingerprint': fingerprint}
+    except Exception:
+        server.server_close()
+        raise
+    controller.bootstrap_path = args.state_dir / 'bootstrap.json'
+    controller.bootstrap_path.write_text(json.dumps({"pin": pin, "port": args.port, "expires_at": time.time() + 300, "pid": os.getpid(), 'wireless': controller.wireless}), encoding="utf-8")
+    if wireless_server:
+        threading.Thread(target=wireless_server.serve_forever, daemon=True).start()
     print(f"FrontDeck · http://127.0.0.1:{args.port}/preview/ · 연결 코드: {pin} (5분)", flush=True)
+    if wireless_server:
+        print(f'Wi-Fi 연결 설정: http://127.0.0.1:{args.port}/connect/', flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
         server.server_close()
+        if wireless_server:
+            wireless_server.shutdown(); wireless_server.server_close()
 
 
 if __name__ == "__main__":

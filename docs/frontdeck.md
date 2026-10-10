@@ -4,7 +4,7 @@ PC 앱 실행·단축키·미디어 제어용 자체 터치 패널입니다. Goo
 
 ## 준비
 
-- Windows와 Python 3.11 이상. 외부 Python 패키지 없음.
+- Windows와 Python 3.11 이상. USB 모드는 외부 Python 패키지가 필요 없고, Wi-Fi 모드는 `requirements-wireless.txt`를 설치합니다.
 - Android Platform Tools의 ADB.
 - 앱 빌드 시 JDK 17 이상, Android SDK platform `android-33`, build-tools `36.0.0`. 이번 로컬 빌드는 JDK 24로 검증함.
 - Toss Front 2의 기기별 원본 백업과 디버그 설정 확인. [복구 절차](recovery.md).
@@ -18,7 +18,7 @@ PC 앱 실행·단축키·미디어 제어용 자체 터치 패널입니다. Goo
 python tools/build_android.py
 ```
 
-결과는 `dist/FrontDeck-1.2.0.apk`입니다. APK 서명과 SHA-256 검증 결과는 `build/android/verification.json`에 저장합니다. SDK가 다른 경로라면 `--sdk`를 지정합니다. `build/android/frontdeck.keystore`와 비밀번호 파일을 함께 보관해야 기존 앱을 같은 서명으로 업데이트할 수 있습니다. 빌드 파일과 서명키는 Git에서 제외합니다.
+결과는 `dist/FrontDeck-1.3.1.apk`입니다. APK 서명과 SHA-256 검증 결과는 `build/android/verification.json`에 저장합니다. SDK가 다른 경로라면 `--sdk`를 지정합니다. `build/android/frontdeck.keystore`와 비밀번호 파일을 함께 보관해야 기존 앱을 같은 서명으로 업데이트할 수 있습니다. 빌드 파일과 서명키는 Git에서 제외합니다.
 
 ## PC 프로그램
 
@@ -35,7 +35,7 @@ python -m frontdeck.server --config frontdeck/config.local.json
 powershell -NoProfile -File tools/Start-FrontDeck.ps1
 ```
 
-PC 프로그램은 `127.0.0.1:38765`에만 연결을 받습니다. 공유기 포트 개방이나 Windows 방화벽 규칙 추가가 필요하지 않습니다. PC를 다시 켠 뒤에는 프로그램을 다시 실행합니다. Windows 자동 시작 등록은 하지 않습니다.
+기본 USB 모드는 `127.0.0.1:38765`에서만 연결을 받으며 방화벽 규칙이 필요하지 않습니다. 1.3.0의 [Wi-Fi 연결](frontdeck-wireless.md)은 같은 LAN의 지정된 IPv4 주소에서 TLS 포트를 추가합니다. PC를 다시 켠 뒤에는 프로그램을 다시 실행합니다. Windows 자동 시작 등록은 하지 않습니다.
 
 콘솔 실행은 `Ctrl+C`로 종료합니다. 숨겨진 창으로 실행한 프로그램과 연결 감시는 `powershell -NoProfile -File tools/Stop-FrontDeck.ps1`로 종료할 수 있습니다. 이 저장소의 실행 파일 경로가 맞는 프로세스만 종료하며 연결 토큰과 설정은 보관합니다.
 
@@ -76,6 +76,8 @@ python tools/watch_deck.py --serial DEVICE_SERIAL
 
 PC에서 설정 파일을 직접 편집할 수도 있으며 이때는 프로그램을 재시작합니다. 예제 설정을 보면서 모음 이름·순서도 바꿀 수 있습니다. 연결된 앱은 5초마다 버튼 설정 변경을 확인합니다.
 
+1.3.1부터 PC 프로그램 버튼과 하단 작업표시줄에는 [실제 Windows 앱 아이콘](frontdeck-app-icons.md)을 표시합니다. 프로그램 아이콘을 가져오지 못하거나 단축키·미디어·웹 버튼인 경우 기존에 선택한 아이콘을 사용합니다. 버튼의 이름·색상·동작과 사용자 설정 파일은 유지합니다.
+
 | 종류 | 설정 | 예 |
 | --- | --- | --- |
 | 앱 실행 | `type: launch`, `executable`, 선택적 `args` 문자열 배열 | `notepad.exe` 또는 앱 실행 파일의 절대 경로 |
@@ -94,7 +96,7 @@ PC에서 설정 파일을 직접 편집할 수도 있으며 이때는 프로그�
 
 ![FrontDeck 1.2.0 브라우저 미리보기. 창 이름은 데모이며 실제 PC 목록이 아닙니다.](images/frontdeck-1.2-preview.png)
 
-기기의 오른쪽 위 설정 버튼에서 PC 연결 코드를 다시 입력하거나 Android 설정·기본 홈 선택을 열 수 있습니다. 앱은 전체 화면을 유지하고 켜져 있는 동안 화면이 꺼지지 않게 합니다. OS 자체 알림과 토스 DEBUG 문구의 제거는 별도의 기기 전환 설정에서 확인해야 합니다.
+기기의 오른쪽 위 설정 버튼에서 **Wi-Fi 연결** 또는 **USB 연결 코드 입력**, Android 설정·기본 홈 선택을 열 수 있습니다. Wi-Fi 연결은 PC 주소와 8자리 코드 입력 후 PC의 기기 확인 코드가 일치하는지 확인합니다. 연결 방식과 인증 정보는 앱 업데이트·재부팅 후에도 저장합니다. 앱은 전체 화면을 유지하고 켜져 있는 동안 화면이 꺼지지 않게 합니다. OS 자체 알림과 토스 DEBUG 문구의 제거는 별도의 기기 전환 설정에서 확인해야 합니다.
 
 1.0.1은 기본 홈으로 실행될 때 화면을 켜고 비밀번호가 없는 잠금 화면을 닫습니다. PIN·패턴·비밀번호가 설정된 기기의 잠금은 변경하지 않으며 사용자가 직접 잠금 해제해야 합니다. [Android 화면 켜기 API](https://developer.android.com/reference/android/app/Activity#setTurnScreenOn(boolean))와 [잠금 화면 API](https://developer.android.com/reference/android/app/KeyguardManager#requestDismissKeyguard(android.app.Activity,%20android.app.KeyguardManager.KeyguardDismissCallback))를 사용합니다.
 

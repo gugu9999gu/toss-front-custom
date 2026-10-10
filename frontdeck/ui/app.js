@@ -24,6 +24,16 @@ function status(value, message) {
   document.querySelectorAll(".tile,.window").forEach(b => b.disabled = Boolean(b.dataset.busy) || (native && !connected));
 }
 function feedback(message) { $("feedback").textContent = message; }
+function appGraphic(holder, image, fallback) {
+  const valid = typeof image === "string" && image.length <= 16000 && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(image);
+  const signature = valid ? image : "fallback:" + fallback;
+  if (holder.frontDeckGraphic === signature) return; holder.frontDeckGraphic = signature;
+  holder.innerHTML = icon(fallback);
+  if (!valid) return;
+  const picture = document.createElement("img"); picture.src = image; picture.alt = ""; picture.draggable = false; picture.decoding = "async";
+  picture.addEventListener("error", () => { holder.innerHTML = icon(fallback); }, {once: true});
+  holder.replaceChildren(picture);
+}
 function adopt(value) { config = value; localStorage.setItem("config", JSON.stringify(config)); render(); }
 function option(value, label) { const item = document.createElement("option"); item.value = value; item.textContent = label; return item; }
 function render() {
@@ -47,7 +57,7 @@ function render() {
   profile.actions.slice(page * 12, page * 12 + 12).forEach(action => {
     const b = document.createElement("button"); b.className = "tile"; b.dataset.id = action.id;
     b.dataset.tone = ["blue", "violet", "green", "red"].includes(action.tone) ? action.tone : "slate"; b.disabled = native && !connected;
-    const graphic = document.createElement("span"); graphic.className = "icon"; graphic.innerHTML = icon(action.icon);
+    const graphic = document.createElement("span"); graphic.className = "icon"; appGraphic(graphic, action.image, action.icon);
     const label = document.createElement("span"); label.className = "label"; label.textContent = action.label; b.append(graphic, label);
     let hold = null, held = false, x = 0, y = 0;
     const cancel = () => { clearTimeout(hold); hold = null; };
@@ -65,7 +75,7 @@ function render() {
 }
 async function check() {
   if (checking || !native || document.hidden) return; checking = true;
-  try { const next = await request("config"); if (JSON.stringify(next) !== JSON.stringify(config)) adopt(next); status(true, "PC 연결됨"); }
+  try { const next = await request("config"); if (JSON.stringify(next) !== JSON.stringify(config)) adopt(next); if (!connected) feedback("버튼을 눌러 PC를 제어하세요"); status(true, next.transport === "wifi" ? "PC 연결됨 · Wi-Fi" : "PC 연결됨"); }
   catch (error) { status(false, "PC 연결 확인 필요"); feedback(error.message); } finally { checking = false; }
 }
 function renderWindows(rows) {
@@ -82,7 +92,7 @@ function renderWindows(rows) {
     let b = existing.get(row.id);
     if (!b) {
       b = document.createElement("button"); b.className = "window"; b.dataset.id = row.id;
-      for (const cls of ["window-app", "window-title", "window-indicator"]) { const n = document.createElement("span"); n.className = cls; b.append(n); }
+      for (const cls of ["window-icon", "window-app", "window-title", "window-indicator"]) { const n = document.createElement("span"); n.className = cls; b.append(n); }
       b.addEventListener("click", async () => {
         if (!native) return feedback("창 전환 · 미리보기"); if (b.dataset.busy) return; b.dataset.busy = "1"; b.disabled = true;
         try { await request("focus", {id: row.id, request_id: requestId()}); feedback(b.querySelector(".window-app").textContent + " 창 열림"); }
@@ -90,6 +100,7 @@ function renderWindows(rows) {
       }); list.append(b);
     }
     b.classList.toggle("active", row.active); b.disabled = Boolean(b.dataset.busy) || (native && !connected);
+    appGraphic(b.querySelector(".window-icon"), row.image, "desktop");
     b.setAttribute("aria-label", row.title + (row.minimized ? " · 최소화됨 · 창 열기" : " · 창 열기"));
     b.querySelector(".window-app").textContent = row.app; b.querySelector(".window-title").textContent = row.title;
     b.querySelector(".window-indicator").textContent = row.active ? "●" : row.minimized ? "―" : "";

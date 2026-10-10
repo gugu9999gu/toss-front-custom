@@ -18,12 +18,15 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import javax.net.ssl.HttpsURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -116,16 +119,29 @@ public final class DeckActivity extends Activity {
     }
     private void consumePairingIntent(Intent intent) {
         String pin = intent.getStringExtra("pairing_code");
+        String host = intent.getStringExtra("wireless_host");
+        String fingerprint = intent.getStringExtra("wireless_fingerprint");
+        int port = intent.getIntExtra("wireless_port", 38766);
         intent.removeExtra("pairing_code");
-        if (pin != null && pin.matches("[0-9]{8}")) pair(pin);
+        intent.removeExtra("wireless_host"); intent.removeExtra("wireless_fingerprint"); intent.removeExtra("wireless_port");
+        if (pin != null && pin.matches("[0-9]{8}")) {
+            try { pair(pin, host == null ? ConnectionTarget.usb() : ConnectionTarget.wifi(host, port, fingerprint)); }
+            catch (IllegalArgumentException invalid) { Toast.makeText(this, "무선 연결 정보를 확인하세요", Toast.LENGTH_SHORT).show(); }
+        }
     }
-    private void pair(final String pin) {
+    private ConnectionTarget target() {
+        if (!preferences.getString("mode", "usb").equals("wifi")) return ConnectionTarget.usb();
+        return ConnectionTarget.wifi(preferences.getString("host", ""), preferences.getInt("port", 38766), preferences.getString("fingerprint", ""));
+    }
+    private void pair(final String pin, final ConnectionTarget target) {
         network.execute(() -> {
             JSONObject result;
             try {
-                result = call("pair", new JSONObject().put("pin", pin));
+                result = call("pair", new JSONObject().put("pin", pin), target, "");
                 if (result.has("token")) {
-                    preferences.edit().putString("token", result.getString("token")).commit();
+                    preferences.edit().putString("token", result.getString("token"))
+                        .putString("mode", target.wireless ? "wifi" : "usb").putString("host", target.host)
+                        .putInt("port", target.port).putString("fingerprint", target.fingerprint).commit();
                     result = new JSONObject().put("ok", true);
                 }
             } catch (Exception failure) { result = error("PC 연결을 확인하세요."); }
@@ -140,11 +156,14 @@ public final class DeckActivity extends Activity {
         return result;
     }
     private JSONObject call(String route, JSONObject body) throws Exception {
+        return call(route, body, target(), preferences.getString("token", ""));
+    }
+    private JSONObject call(String route, JSONObject body, ConnectionTarget target, String token) throws Exception {
         boolean read = route.equals("config") || route.equals("windows") || route.equals("apps") || route.equals("editor");
         if (!read && !route.equals("action") && !route.equals("pair") && !route.equals("focus") && !route.equals("save") && !route.equals("delete")) return error("지원하지 않는 요청입니다.");
-        String token = preferences.getString("token", "");
         if (!route.equals("pair") && token.isEmpty()) return error("설정에서 PC 연결 코드를 입력하세요.");
-        HttpURLConnection connection = (HttpURLConnection) new URL("http://127.0.0.1:38765/api/" + route).openConnection();
+        HttpURLConnection connection = (HttpURLConnection) new URL(target.baseUrl() + "/api/" + route).openConnection();
+        if (target.wireless) target.secure((HttpsURLConnection) connection);
         connection.setConnectTimeout(1800); connection.setReadTimeout(3500);
         connection.setInstanceFollowRedirects(false);
         connection.setRequestProperty("Accept", "application/json");
@@ -164,7 +183,9 @@ public final class DeckActivity extends Activity {
             try (InputStream in = stream; ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 byte[] buffer = new byte[4096]; int count;
                 while ((count = in.read(buffer)) != -1) { if (out.size() + count > 4194304) return error("잘못된 PC 응답입니다."); out.write(buffer, 0, count); }
-                return new JSONObject(new String(out.toByteArray(), StandardCharsets.UTF_8));
+                JSONObject response = new JSONObject(new String(out.toByteArray(), StandardCharsets.UTF_8));
+                if (route.equals("config") && status == 200) response.put("transport", target.wireless ? "wifi" : "usb");
+                return response;
             }
         } finally { connection.disconnect(); }
     }
@@ -178,23 +199,66 @@ public final class DeckActivity extends Activity {
         catch (Exception unavailable) { Toast.makeText(this, "레코드 플레이어를 열 수 없습니다", Toast.LENGTH_SHORT).show(); }
     }
     private void showSettings() {
-        new AlertDialog.Builder(this).setTitle("FrontDeck 설정")
-            .setItems(new String[] {"PC 연결 코드 입력", "뮤직플레이어 열기", "Android 설정", "기본 홈 선택"}, (dialog, which) -> {
+        String mode = preferences.getString("mode", "usb");
+        new AlertDialog.Builder(this).setTitle("FrontDeck 설정 · " + (mode.equals("wifi") ? "Wi-Fi" : "USB"))
+            .setItems(new String[] {"Wi-Fi 연결", "USB 연결 코드 입력", "뮤직플레이어 열기", "Android 설정", "기본 홈 선택"}, (dialog, which) -> {
                 if (which == 0) {
+                    showWireless();
+                } else if (which == 1) {
                     EditText input = new EditText(this);
                     input.setInputType(InputType.TYPE_CLASS_NUMBER); input.setHint("8자리 연결 코드"); input.setSingleLine(true);
                     new AlertDialog.Builder(this).setTitle("PC 연결").setMessage("PC 연결 프로그램에 표시된 코드를 입력하세요.")
                         .setView(input).setPositiveButton("연결", (d, w) -> {
                             String pin = input.getText().toString().trim();
-                            if (pin.matches("[0-9]{8}")) pair(pin);
+                            if (pin.matches("[0-9]{8}")) pair(pin, ConnectionTarget.usb());
                             else Toast.makeText(this, "8자리 코드를 입력하세요", Toast.LENGTH_SHORT).show();
                         }).setNegativeButton("취소", null).show();
-                } else if (which == 1) { openMusic(); }
+                } else if (which == 2) { openMusic(); }
                 else {
-                    try { startActivity(new Intent(which == 2 ? Settings.ACTION_SETTINGS : Settings.ACTION_HOME_SETTINGS)); }
+                    try { startActivity(new Intent(which == 3 ? Settings.ACTION_SETTINGS : Settings.ACTION_HOME_SETTINGS)); }
                     catch (Exception unavailable) { Toast.makeText(this, "설정을 열 수 없습니다", Toast.LENGTH_SHORT).show(); }
                 }
             }).setNegativeButton("닫기", null).show();
+    }
+    private void showWireless() {
+        LinearLayout form = new LinearLayout(this); form.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (24 * getResources().getDisplayMetrics().density); form.setPadding(pad, 0, pad, 0);
+        TextView help = new TextView(this); help.setText("같은 공유기의 Wi-Fi에 연결한 뒤 PC의 무선 연결 창에 표시되는 주소와 코드를 입력하세요."); form.addView(help);
+        EditText address = new EditText(this); address.setSingleLine(true); address.setHint("PC 주소 · 예: 192.168.1.10");
+        address.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        String oldHost = preferences.getString("host", ""); int oldPort = preferences.getInt("port", 38766);
+        if (!oldHost.equals("127.0.0.1")) address.setText(oldHost + (oldPort == 38766 ? "" : ":" + oldPort));
+        form.addView(address);
+        EditText pin = new EditText(this); pin.setSingleLine(true); pin.setHint("8자리 연결 코드"); pin.setInputType(InputType.TYPE_CLASS_NUMBER); form.addView(pin);
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Wi-Fi로 PC 연결").setView(form)
+            .setPositiveButton("PC 확인", null).setNegativeButton("취소", null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+            String raw = address.getText().toString().trim(); String[] parts = raw.split(":", -1);
+            int port = 38766;
+            try { if (parts.length == 2) port = Integer.parseInt(parts[1]); else if (parts.length != 1) throw new IllegalArgumentException(); }
+            catch (Exception invalid) { address.setError("PC 주소를 확인하세요"); return; }
+            String host = parts[0], code = pin.getText().toString().trim();
+            if (!ConnectionTarget.validAddress(host, port)) { address.setError("PC의 사설 IPv4 주소를 입력하세요"); return; }
+            if (!code.matches("[0-9]{8}")) { pin.setError("8자리 코드를 입력하세요"); return; }
+            final int selectedPort = port;
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            network.execute(() -> {
+                try {
+                    String fingerprint = ConnectionTarget.probeFingerprint(host, selectedPort);
+                    ConnectionTarget candidate = ConnectionTarget.wifi(host, selectedPort, fingerprint);
+                    runOnUiThread(() -> {
+                        if (destroyed) return; dialog.dismiss();
+                        new AlertDialog.Builder(this).setTitle("PC 확인 코드")
+                            .setMessage(ConnectionTarget.confirmationCode(fingerprint) + "\n\nPC 무선 연결 창의 기기 확인 코드와 같으면 연결하세요.")
+                            .setPositiveButton("코드가 같아요 · 연결", (d, w) -> pair(code, candidate)).setNegativeButton("취소", null).show();
+                    });
+                } catch (Exception unavailable) {
+                    runOnUiThread(() -> { if (!destroyed) { dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                        address.setError("PC 프로그램·같은 네트워크·주소를 확인하세요"); } });
+                }
+            });
+        }));
+        dialog.show();
     }
     public final class Bridge {
         @JavascriptInterface public void request(final String id, final String route, final String raw) {

@@ -15,6 +15,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--serial", required=True); parser.add_argument("--adb")
     parser.add_argument("--install", action="store_true")
+    parser.add_argument('--wireless', action='store_true', help='초기 USB 설치 후 PC의 인증서로 Wi-Fi 연결 정보를 저장합니다.')
     parser.add_argument("--home", action="store_true", help="FrontDeck을 기본 홈으로 설정합니다.")
     parser.add_argument("--state-dir", type=Path, default=Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local/share")) / "FrontDeck")
     args = parser.parse_args()
@@ -31,7 +32,7 @@ def main():
         if installed.intersection(old):
             raise RuntimeError("토스 앱이 남아 있습니다. 기기별 백업과 토스 자동 복귀 제거를 먼저 완료하세요.")
     if args.install:
-        apk = ROOT / "dist/FrontDeck-1.2.0.apk"
+        apk = ROOT / "dist/FrontDeck-1.3.1.apk"
         report = json.loads((ROOT / "build/android/verification.json").read_text(encoding="utf-8"))
         if report["package"] != PACKAGE or hashlib.sha256(apk.read_bytes()).hexdigest() != report["sha256"]:
             raise RuntimeError("빌드 검증 결과와 APK가 다릅니다. 다시 빌드하세요.")
@@ -39,10 +40,24 @@ def main():
         if "Success" not in output: raise RuntimeError("APK 설치를 확인하지 못했습니다.")
     if not device.run("shell", "pm", "path", "--user", "0", PACKAGE).startswith("package:"):
         raise RuntimeError("FrontDeck APK가 설치돼 있지 않습니다. --install을 사용하세요.")
-    device.run("reverse", "tcp:38765", "tcp:38765")
-    if "tcp:38765 tcp:38765" not in device.run("reverse", "--list"):
-        raise RuntimeError("PC 통신 포트를 확인하지 못했습니다.")
-    device.run("shell", "am", "start", "-n", PACKAGE + "/.DeckActivity", "--es", "pairing_code", str(bootstrap["pin"]))
+    command = ['shell', 'am', 'start', '-n', PACKAGE + '/.DeckActivity', '--es', 'pairing_code', str(bootstrap['pin'])]
+    if args.wireless:
+        from sys import path as module_path
+        module_path.insert(0, str(ROOT))
+        from frontdeck.wireless import lan_address
+        wireless = bootstrap.get('wireless')
+        if not wireless or not health.get('wireless_enabled'):
+            raise RuntimeError('PC 프로그램을 -Wireless 옵션으로 실행하세요.')
+        host = lan_address(wireless['host'])
+        import re
+        if not re.fullmatch(r'[a-f0-9]{64}', wireless['fingerprint']) or not 1024 <= wireless['port'] <= 65535:
+            raise RuntimeError('PC 무선 연결 정보가 올바르지 않습니다.')
+        command += ['--es', 'wireless_host', host, '--ei', 'wireless_port', str(wireless['port']), '--es', 'wireless_fingerprint', wireless['fingerprint']]
+    else:
+        device.run("reverse", "tcp:38765", "tcp:38765")
+        if "tcp:38765 tcp:38765" not in device.run("reverse", "--list"):
+            raise RuntimeError("PC 통신 포트를 확인하지 못했습니다.")
+    device.run(*command)
     if args.home:
         device.run("shell", "cmd", "package", "set-home-activity", "--user", "0", PACKAGE + "/.DeckActivity")
         home = device.run("shell", "cmd", "package", "resolve-activity", "--brief", "--user", "0", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")
