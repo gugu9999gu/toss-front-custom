@@ -60,6 +60,8 @@ python tools/watch_deck.py --serial DEVICE_SERIAL
 
 또는 `Start-FrontDeck.ps1 -Serial DEVICE_SERIAL`로 PC 프로그램과 감시를 함께 숨겨진 창에서 실행합니다. ADB를 찾지 못하면 Python 도구에는 `--adb`, PowerShell 도구에는 `-Adb`로 실제 경로를 지정합니다.
 
+여러 기기를 사용하는 경우 각 기기의 식별값으로 `Start-FrontDeck.ps1 -Serial DEVICE_SERIAL`을 한 번씩 실행합니다. PC 프로그램은 하나를 공유하고 USB 재연결 감시는 기기마다 유지합니다. 같은 기기로 다시 실행하면 기존 감시를 재사용합니다. `Stop-FrontDeck.ps1`은 이 저장소에서 시작한 PC 프로그램과 각 기기의 감시를 함께 종료합니다.
+
 ## 버튼 수정
 
 1.2.0부터 기기에서 바로 편집할 수 있습니다.
@@ -125,3 +127,5 @@ python -m unittest discover -s tests -v
 브라우저의 400×640·800×1280 배치와 읽기 전용 미리보기를 다시 확인했습니다. 실제 Windows 제어와 분리된 네이티브 연결 모형에서 길게 누르기가 실행 요청을 보내지 않는 것, 인수가 있는 기본 앱 버튼의 편집 시 인수 보존, 단축키 입력·저장 요청을 확인했습니다.
 
 Windows 패키지 앱은 호스트 창의 실제 내용 프로세스와 앱 식별값을 조회하여 기존 창을 찾습니다. 설치된 계산기를 앱 목록에서 등록하여 실물 버튼으로 실행했고, 다시 누르면 같은 창이 앞으로 오는 것을 확인했습니다. 메모장·계산기 예시 버튼은 내 버튼 모음에 남겼습니다. [앱 식별 API](https://learn.microsoft.com/en-us/windows/win32/api/appmodel/nf-appmodel-getapplicationusermodelid).
+
+같은 날 첫 번째 기기에도 LineageOS와 FrontDeck 1.2.0을 설치했습니다. 이 기기의 PC 인증 연결·기본 HOME·실제 메모장 실행·PC 음량과 음소거·정상 재부팅 후 자동 표시·연결 복원을 확인했습니다. 기존 음악 앱의 화면 설정·재생 기록·즐겨찾기를 복원했고 음표 버튼에서 음악 앱을 열었습니다. 두 기기의 감시를 각각 시작하고 서버·감시 종료와 재시작 후 기존 PC 버튼 설정 유지도 확인했습니다. [첫 번째 기기의 설치와 데이터 복원](lineage-first-device.md).

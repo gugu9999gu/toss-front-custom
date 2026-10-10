@@ -30,19 +30,28 @@ if ($bootstrap.expires_at -gt [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) {
 if ($Serial) {
     if ($Serial -notmatch '^[A-Za-z0-9_.:\-]+$' -or $Adb.Contains('"')) { throw '기기 식별값 또는 ADB 경로가 올바르지 않습니다.' }
     $watchPath = Join-Path $projectRoot 'tools\watch_deck.py'
-    $watchStatePath = Join-Path $stateDir 'connection.json'
-    if (Test-Path -LiteralPath $watchStatePath) {
-        $oldWatch = Get-Content -LiteralPath $watchStatePath -Raw | ConvertFrom-Json
-        $oldProcess = Get-CimInstance Win32_Process -Filter ('ProcessId=' + [int]$oldWatch.pid)
-        if ($oldProcess -and $oldProcess.CommandLine -match [regex]::Escape($watchPath)) {
-            if ($oldWatch.serial -eq $Serial) { Write-Host '선택한 기기의 연결 감시가 이미 실행 중입니다.'; return }
-            Stop-Process -Id ([int]$oldWatch.pid)
+    $serialHasher = [System.Security.Cryptography.SHA256]::Create()
+    try { $serialDigest = $serialHasher.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Serial)) }
+    finally { $serialHasher.Dispose() }
+    $watchId = -join ($serialDigest[0..7] | ForEach-Object { $_.ToString('x2') })
+    $watchStatePath = Join-Path $stateDir ('connection-' + $watchId + '.json')
+    # Reuse an older single-device watcher too. Starting another panel must not stop it.
+    foreach ($existingStatePath in @($watchStatePath, (Join-Path $stateDir 'connection.json'))) {
+        if (Test-Path -LiteralPath $existingStatePath) {
+            $oldWatch = Get-Content -LiteralPath $existingStatePath -Raw | ConvertFrom-Json
+            if ($oldWatch.serial -ne $Serial) { continue }
+            $oldProcess = Get-CimInstance Win32_Process -Filter ('ProcessId=' + [int]$oldWatch.pid)
+            if ($oldProcess -and $oldProcess.CommandLine -match [regex]::Escape($watchPath)) {
+                @{pid=[int]$oldWatch.pid;serial=$Serial} | ConvertTo-Json | Set-Content -LiteralPath $watchStatePath -Encoding UTF8
+                Write-Host '선택한 기기의 연결 감시가 이미 실행 중입니다.'
+                return
+            }
         }
     }
     $watchArgs = '"{0}" --serial "{1}"' -f $watchPath, $Serial
     if ($Adb) { $watchArgs += ' --adb "{0}"' -f $Adb }
     $watchProcess = Start-Process -FilePath $Python -ArgumentList $watchArgs -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru `
-        -RedirectStandardOutput (Join-Path $stateDir 'connection.log') -RedirectStandardError (Join-Path $stateDir 'connection-error.log')
+        -RedirectStandardOutput (Join-Path $stateDir ('connection-' + $watchId + '.log')) -RedirectStandardError (Join-Path $stateDir ('connection-' + $watchId + '-error.log'))
     @{pid=$watchProcess.Id;serial=$Serial} | ConvertTo-Json | Set-Content -LiteralPath $watchStatePath -Encoding UTF8
     Write-Host '선택한 기기의 연결 감시를 시작했습니다.'
 }

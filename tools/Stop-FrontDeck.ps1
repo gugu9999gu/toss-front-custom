@@ -1,10 +1,15 @@
 ﻿$ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $stateDir = Join-Path $env:LOCALAPPDATA 'FrontDeck'
-$targets = @(
-    @{state='connection.json';script=(Join-Path $projectRoot 'tools\watch_deck.py')},
-    @{state='bootstrap.json';script=(Join-Path $projectRoot 'frontdeck\server.py')}
-)
+$watchPath = Join-Path $projectRoot 'tools\watch_deck.py'
+$targets = @(@{state='bootstrap.json';script=(Join-Path $projectRoot 'frontdeck\server.py')})
+if (Test-Path -LiteralPath $stateDir) {
+    foreach ($connectionState in Get-ChildItem -LiteralPath $stateDir -File -Filter 'connection*.json') {
+        if ($connectionState.Name -match '^connection(?:-[a-f0-9]{16})?\.json$') {
+            $targets += @{state=$connectionState.Name;script=$watchPath}
+        }
+    }
+}
 foreach ($target in $targets) {
     $statePath = Join-Path $stateDir $target.state
     if (Test-Path -LiteralPath $statePath) {
