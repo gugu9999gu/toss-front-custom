@@ -2,6 +2,7 @@ package dev.tossfront.deck;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.KeyguardManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -37,6 +38,7 @@ public final class DeckActivity extends Activity {
         super.onCreate(state);
         preferences = getSharedPreferences("connection", MODE_PRIVATE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        prepareDashboardWindow();
         if (Build.VERSION.SDK_INT >= 28) {
             WindowManager.LayoutParams layout = getWindow().getAttributes();
             layout.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
@@ -63,6 +65,27 @@ public final class DeckActivity extends Activity {
         consumePairingIntent(getIntent());
     }
 
+    private void prepareDashboardWindow() {
+        KeyguardManager keyguard = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        if (keyguard == null || keyguard.isDeviceSecure()) return;
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        } else {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+        }
+    }
+
+    private void dismissUnsecuredKeyguard() {
+        if (Build.VERSION.SDK_INT < 26) return;
+        KeyguardManager keyguard = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        if (keyguard != null && !keyguard.isDeviceSecure() && keyguard.isKeyguardLocked()) {
+            keyguard.requestDismissKeyguard(this, null);
+        }
+    }
+
     private void immersive() {
         if (Build.VERSION.SDK_INT >= 30) {
             getWindow().setDecorFitsSystemWindows(false);
@@ -79,7 +102,7 @@ public final class DeckActivity extends Activity {
     }
     @Override public void onWindowFocusChanged(boolean focus) { super.onWindowFocusChanged(focus); if (focus) immersive(); }
     @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent); setIntent(intent); consumePairingIntent(intent); }
-    @Override protected void onResume() { super.onResume(); if (web != null) refresh(); }
+    @Override protected void onResume() { super.onResume(); dismissUnsecuredKeyguard(); if (web != null) refresh(); }
     @Override public void onBackPressed() { showSettings(); }
     @Override protected void onDestroy() {
         destroyed = true; network.shutdownNow();

@@ -18,7 +18,7 @@ PC 앱 실행·단축키·미디어 제어용 자체 터치 패널입니다. Goo
 python tools/build_android.py
 ```
 
-결과는 `dist/FrontDeck-1.0.0.apk`입니다. APK 서명과 SHA-256 검증 결과는 `build/android/verification.json`에 저장합니다. SDK가 다른 경로라면 `--sdk`를 지정합니다. `build/android/frontdeck.keystore`와 비밀번호 파일을 함께 보관해야 기존 앱을 같은 서명으로 업데이트할 수 있습니다. 빌드 파일과 서명키는 Git에서 제외합니다.
+결과는 `dist/FrontDeck-1.0.1.apk`입니다. APK 서명과 SHA-256 검증 결과는 `build/android/verification.json`에 저장합니다. SDK가 다른 경로라면 `--sdk`를 지정합니다. `build/android/frontdeck.keystore`와 비밀번호 파일을 함께 보관해야 기존 앱을 같은 서명으로 업데이트할 수 있습니다. 빌드 파일과 서명키는 Git에서 제외합니다.
 
 ## PC 프로그램
 
@@ -75,6 +75,8 @@ python tools/watch_deck.py --serial DEVICE_SERIAL
 
 기기의 오른쪽 위 설정 버튼에서 PC 연결 코드를 다시 입력하거나 Android 설정·기본 홈 선택을 열 수 있습니다. 앱은 전체 화면을 유지하고 켜져 있는 동안 화면이 꺼지지 않게 합니다. OS 자체 알림과 토스 DEBUG 문구의 제거는 별도의 기기 전환 설정에서 확인해야 합니다.
 
+1.0.1은 기본 홈으로 실행될 때 화면을 켜고 비밀번호가 없는 잠금 화면을 닫습니다. PIN·패턴·비밀번호가 설정된 기기의 잠금은 변경하지 않으며 사용자가 직접 잠금 해제해야 합니다. [Android 화면 켜기 API](https://developer.android.com/reference/android/app/Activity#setTurnScreenOn(boolean))와 [잠금 화면 API](https://developer.android.com/reference/android/app/KeyguardManager#requestDismissKeyguard(android.app.Activity,%20android.app.KeyguardManager.KeyguardDismissCallback))를 사용합니다.
+
 ## 연결 정보
 
 8자리 연결 코드는 PC 프로그램을 시작한 뒤 5분 동안 유효합니다. 연결을 마친 앱은 별도의 임의 토큰을 앱 내부 저장소에 보관합니다. PC 상태 파일은 `%LOCALAPPDATA%/FrontDeck`에 저장합니다. 이 폴더와 기기 저장소의 인증 정보를 공개하지 않습니다.
@@ -89,6 +91,8 @@ python -m unittest discover -s tests -v
 
 인증·만료·잘못된 Host/Origin·고정 명령 제한·동시 재전송·Windows 키 해제 실패 처리를 검사합니다. 실제 키 입력 테스트에는 가짜 Windows API를 사용하여 사용 중인 PC에 키를 보내지 않습니다. Android APK 빌드·서명과 브라우저의 400×640 / 800×1280 배치는 별도로 확인했습니다. 실물 두 번째 기기의 검증 상태는 [진행 기록](second-device.md)에 따릅니다.
 
-2026-10-09 Android API 36 가상 기기에서 네이티브 페어링, 작업·미디어 버튼의 PC 요청과 시험 모드 응답, 연결 해제 시 버튼 비활성화, 재연결 복구, 앱 종료 후 홈 실행과 연결 정보 유지까지 통과했습니다. 가상 기기의 명령 전달 시험은 PC 프로그램을 `--dry-run`으로 실행하며 실제 Windows 동작을 보내지 않습니다. Android 13 실물의 설치·재부팅과 실제 키/음량 동작은 미확인입니다.
+2026-10-09 Android API 36 가상 기기에서 네이티브 페어링, 작업·미디어 버튼의 PC 요청과 시험 모드 응답, 연결 해제 시 버튼 비활성화, 재연결 복구, 앱 종료 후 홈 실행과 연결 정보 유지까지 통과했습니다. 가상 기기의 명령 전달 시험은 PC 프로그램을 `--dry-run`으로 실행하며 실제 Windows 동작을 보내지 않습니다.
+
+2026-10-10 두 번째 실물 기기의 LineageOS 23.2 / Android 16에서 FrontDeck 1.0.1 설치 파일 해시·PC 인증 연결·기본 홈을 확인했습니다. 실물 버튼으로 Windows 메모장 실행과 PC 음량 올리기·내리기·음소거를 검증했고 원래 PC 음량을 복원했습니다. 재부팅 후 별도 화면 조작 없이 패널이 켜지고 PC 연결이 자동 복원됐습니다. 인증·명령 제한·재전송·키 해제 테스트 11개가 통과했습니다. 모든 대상 앱별 단축키 동작과 Android 13 실물에서의 FrontDeck 동작은 미확인입니다. 첫 번째 기기는 종료 상태를 유지했습니다.
 
 페어링된 가상 기기에서 `python tools/android_smoke.py --serial emulator-5560`로 이 시험을 반복할 수 있습니다. 도구는 실물 기기 또는 PC 프로그램의 실제 동작 모드를 받으면 중단합니다.
