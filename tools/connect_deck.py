@@ -31,7 +31,7 @@ def main():
         if installed.intersection(old):
             raise RuntimeError("토스 앱이 남아 있습니다. 기기별 백업과 토스 자동 복귀 제거를 먼저 완료하세요.")
     if args.install:
-        apk = ROOT / "dist/FrontDeck-1.0.1.apk"
+        apk = ROOT / "dist/FrontDeck-1.1.0.apk"
         report = json.loads((ROOT / "build/android/verification.json").read_text(encoding="utf-8"))
         if report["package"] != PACKAGE or hashlib.sha256(apk.read_bytes()).hexdigest() != report["sha256"]:
             raise RuntimeError("빌드 검증 결과와 APK가 다릅니다. 다시 빌드하세요.")

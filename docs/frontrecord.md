@@ -1,6 +1,6 @@
 # FrontRecord · 레코드 플레이어 1.9.8
 
-첫 번째 Toss Front 2 / Android 13용 음악 시각화 앱입니다. YouTube 웹 2.3과 연결하며, 공식 YouTube 앱 선택·실행·미디어 세션 연결은 제거했습니다. 기존 서명으로 업데이트하며 설정·기록·즐겨찾기를 유지합니다. 손 추적은 보완 중이며, 설치와 실제 동작 확인을 버전별로 아래에 구분합니다.
+Toss Front 2의 Android 13과 LineageOS / Android 16에서 사용하는 음악 시각화 앱입니다. YouTube 웹 2.3과 연결하며, 공식 YouTube 앱 선택·실행·미디어 세션 연결은 제거했습니다. 기존 서명으로 업데이트하며 설정·기록·즐겨찾기를 유지합니다. 손 추적은 보완 중이며, 설치와 실제 동작 확인을 기기·버전별로 아래에 구분합니다.
 
 ## 사용
 
@@ -133,10 +133,14 @@ Android SDK 33, build-tools 36.0.0, JDK, Python 3.11으로 빌드했습니다. �
 python -m pip install -r tools/vision-build-requirements.txt
 python tools/build_android.py --app record
 python tools/build_android.py --app youtubeweb
-python tools/install_record.py --serial FIRST_DEVICE_SERIAL --update-web
+python tools/install_record.py --serial DEVICE_SERIAL --update-web
 ~~~
 
-웹 업데이트는 처음 설치할 때 사용한 개인 서명키가 필요합니다. 실제 기기에서는 기존 서명과 데이터를 유지했습니다. 레코드 앱만 업데이트할 때는 --update-web을 제외합니다. 1.6에서는 재생 위치 이동을 보완한 웹 2.3으로 업데이트합니다. 설치 도구는 대상 모델·SDK·root ADB를 확인한 뒤 이 앱의 미디어 접근·다른 앱 위 표시·오디오 분석·정확한 예약 권한을 허용합니다. 설치 후 Record 사용에는 PC나 root 제어 프로그램이 필요하지 않습니다. 기기 부팅 때 음악 화면을 자동으로 띄우지는 않습니다.
+웹 업데이트는 처음 설치할 때 사용한 개인 서명키가 필요합니다. 실제 기기에서는 기존 서명과 데이터를 유지했습니다. 레코드 앱만 업데이트할 때는 --update-web을 제외합니다. 1.6에서는 재생 위치 이동을 보완한 웹 2.3으로 업데이트합니다. 설치 도구는 명시한 Toss Front 2의 모델·부팅 완료·사용자 0·SDK 33/36과 빌드 해시를 확인하고, 설치된 APK 해시도 다시 대조합니다. 이 앱의 미디어 접근·다른 앱 위 표시·오디오 분석·정확한 예약·알림 권한을 허용하며 기존 다른 앱의 알림 접근 설정은 유지합니다. 루트 ADB는 필요하지 않습니다. 이전 Android 13의 루트 ADB에서는 기존 Launcher3 바로가기 추가도 수행하고, 일반 ADB와 Android 16에서는 홈 데이터베이스를 수정하지 않습니다. 카메라 권한은 설치 때 부여하지 않으며 사용자가 카메라 기능을 켤 때 앱에서 요청합니다. 설치 후 Record 사용에는 PC나 root 제어 프로그램이 필요하지 않습니다. 기기 부팅 때 음악 화면을 자동으로 띄우지는 않습니다.
+
+2026-10-10 두 번째 기기의 LineageOS 23.2 / Android 16에 FrontRecord 1.9.8과 YouTube 웹 2.3을 설치했습니다. 일반 ADB shell에서 설치·권한 설정·실제 설치 APK 해시를 확인했습니다. [공개 시험 영상](https://www.youtube.com/watch?v=YE7VzlLtp-4)의 제목·전체 길이·재생 시간이 연동됐으며 화면 버튼으로 일시정지·재생·구간 이동이 실제 영상에 반영됐습니다. 실제 출력 믹스 신호와 점 구체 반응, Three.js 레이싱의 WebGL 준비·오디오 카메라 움직임을 확인했습니다. 시험 영상은 일시정지했습니다. 재부팅 후 앱과 알림·오디오·미디어 접근·다른 앱 위 표시·정확한 예약 권한이 유지됐습니다. 카메라·손 제스처와 모든 시각화의 성능은 이 기기에서 미검증이며, 이전 첫 번째 기기의 손 추적 문제를 해결했다고 주장하지 않습니다. FrontDeck 1.1.0의 상단 음표 버튼에서 앱을 열 수 있습니다.
+
+![두 번째 실물 기기에서 YouTube 재생 정보와 실제 오디오에 연동된 점 구체.](images/second-device-frontrecord.png)
 
 오프라인 검증:
 

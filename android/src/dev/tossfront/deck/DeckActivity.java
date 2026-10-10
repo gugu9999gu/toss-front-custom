@@ -166,9 +166,18 @@ public final class DeckActivity extends Activity {
             }
         } finally { connection.disconnect(); }
     }
+    private void openMusic() {
+        Intent launch = getPackageManager().getLaunchIntentForPackage("dev.tossfront.record");
+        if (launch == null) {
+            Toast.makeText(this, "레코드 플레이어를 먼저 설치해 주세요", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try { startActivity(launch); }
+        catch (Exception unavailable) { Toast.makeText(this, "레코드 플레이어를 열 수 없습니다", Toast.LENGTH_SHORT).show(); }
+    }
     private void showSettings() {
         new AlertDialog.Builder(this).setTitle("FrontDeck 설정")
-            .setItems(new String[] {"PC 연결 코드 입력", "Android 설정", "기본 홈 선택"}, (dialog, which) -> {
+            .setItems(new String[] {"PC 연결 코드 입력", "뮤직플레이어 열기", "Android 설정", "기본 홈 선택"}, (dialog, which) -> {
                 if (which == 0) {
                     EditText input = new EditText(this);
                     input.setInputType(InputType.TYPE_CLASS_NUMBER); input.setHint("8자리 연결 코드"); input.setSingleLine(true);
@@ -178,8 +187,9 @@ public final class DeckActivity extends Activity {
                             if (pin.matches("[0-9]{8}")) pair(pin);
                             else Toast.makeText(this, "8자리 코드를 입력하세요", Toast.LENGTH_SHORT).show();
                         }).setNegativeButton("취소", null).show();
-                } else {
-                    try { startActivity(new Intent(which == 1 ? Settings.ACTION_SETTINGS : Settings.ACTION_HOME_SETTINGS)); }
+                } else if (which == 1) { openMusic(); }
+                else {
+                    try { startActivity(new Intent(which == 2 ? Settings.ACTION_SETTINGS : Settings.ACTION_HOME_SETTINGS)); }
                     catch (Exception unavailable) { Toast.makeText(this, "설정을 열 수 없습니다", Toast.LENGTH_SHORT).show(); }
                 }
             }).setNegativeButton("닫기", null).show();
@@ -197,5 +207,6 @@ public final class DeckActivity extends Activity {
             });
         }
         @JavascriptInterface public void openSettings() { runOnUiThread(() -> { if (!destroyed) showSettings(); }); }
+        @JavascriptInterface public void openMusic() { runOnUiThread(() -> { if (!destroyed) DeckActivity.this.openMusic(); }); }
     }
 }

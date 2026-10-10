@@ -1,9 +1,12 @@
-"""Install the record UI and its media-aware web companion on one explicit root-ADB device."""
+"""Install the record UI and web companion on an explicit Android 13/16 Front 2."""
 from pathlib import Path
 import argparse
+import hashlib
+import json
 import os
 import shlex
 from start_audio import adb_run
+from device import Device
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "dev.tossfront.record"
@@ -16,29 +19,42 @@ def main():
     parser.add_argument("--update-web", action="store_true", help="Update the locally signed YouTube web app; its original signing key is required")
     args = parser.parse_args()
     adb, serial = args.adb, args.serial
-    if adb_run(adb, serial, "shell", "getprop ro.product.model") != "toss_front2" or adb_run(adb, serial, "shell", "getprop ro.build.version.sdk") != "33":
-        raise SystemExit("Select the intended Toss Front 2 on Android 13")
-    if "uid=0(root)" not in adb_run(adb, serial, "shell", "id"):
-        raise SystemExit("This setup tool requires root ADB; the installed app runs without root")
+    info = Device(serial, adb).inspect()
+    if info["sdk"] not in ("33", "36"):
+        raise SystemExit("Select the intended Toss Front 2 on Android 13 or 16")
+    legacy_root = info["sdk"] == "33" and "uid=0(root)" in adb_run(adb, serial, "shell", "id")
     paths = [ROOT / "dist/FrontRecord-1.9.8.apk"]
     if args.update_web: paths.append(ROOT / "dist/YouTube-Web-2.3.apk")
     if not all(path.is_file() for path in paths): raise SystemExit("Build requested APKs before installation")
+    verified = []
     for path in paths:
+        build_name, package = ("record", PACKAGE) if path.name.startswith("FrontRecord-") else ("youtubeweb", "local.tossfront.youtubeweb")
+        report = json.loads((ROOT / "build" / build_name / "verification.json").read_text(encoding="utf-8"))
+        if report["package"] != package or hashlib.sha256(path.read_bytes()).hexdigest() != report["sha256"]:
+            raise RuntimeError("Build verification does not match " + path.name)
+        verified.append((path, package, report["sha256"]))
+    for path, package, expected in verified:
         result = adb_run(adb, serial, "install", "-r", str(path))
         if "Success" not in result: raise RuntimeError("APK installation did not report success")
-        print("Installed " + path.name)
+        installed = adb_run(adb, serial, "shell", "pm path " + package)
+        if not installed.startswith("package:") or "\n" in installed:
+            raise RuntimeError("Cannot verify installed APK path")
+        actual = adb_run(adb, serial, "shell", "sha256sum " + shlex.quote(installed[8:])).split()[0]
+        if actual != expected: raise RuntimeError("Installed APK hash mismatch")
+        print("Installed and SHA-256 verified " + path.name)
     # Add only this app's listener and overlay access; other listeners/app operations stay intact.
     adb_run(adb, serial, "shell", "cmd notification allow_listener " + PACKAGE + "/.SessionListener 0")
     adb_run(adb, serial, "shell", "cmd appops set " + PACKAGE + " SYSTEM_ALERT_WINDOW allow")
     adb_run(adb, serial, "shell", "cmd appops set " + PACKAGE + " SCHEDULE_EXACT_ALARM allow")
-    adb_run(adb, serial, "shell", "cmd appops write-settings")
     adb_run(adb, serial, "shell", "pm grant " + PACKAGE + " android.permission.POST_NOTIFICATIONS")
     adb_run(adb, serial, "shell", "pm grant " + PACKAGE + " android.permission.RECORD_AUDIO")
     listener = adb_run(adb, serial, "shell", "settings get secure enabled_notification_listeners")
     if PACKAGE not in listener: raise RuntimeError("Media listener access was not enabled")
+    if "allow" not in adb_run(adb, serial, "shell", "cmd appops get " + PACKAGE + " SYSTEM_ALERT_WINDOW"):
+        raise RuntimeError("Floating UI access was not enabled")
     # Add a shortcut only into an unoccupied visible cell, using Launcher3's own provider.
     uri = "content://com.android.launcher3.settings/favorites"
-    favorites = adb_run(adb, serial, "shell", "content query --uri " + uri + " --projection intent:container:screen:cellX:cellY")
+    favorites = adb_run(adb, serial, "shell", "content query --uri " + uri + " --projection intent:container:screen:cellX:cellY") if legacy_root else PACKAGE
     if PACKAGE not in favorites:
         import re
         occupied = set()

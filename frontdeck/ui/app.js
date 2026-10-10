@@ -69,6 +69,8 @@ async function check() {
 }
 document.getElementById("settings").innerHTML = icon("settings");
 document.getElementById("settings").addEventListener("click", () => native ? NativeDeck.openSettings() : feedback("읽기 전용 미리보기 · 기기에서 PC를 연결하세요"));
+document.getElementById("music").innerHTML = icon("music");
+document.getElementById("music").addEventListener("click", () => native ? NativeDeck.openMusic() : feedback("뮤직플레이어 · 기기에서 사용할 수 있어요"));
 function clock() { document.getElementById("clock").textContent = new Intl.DateTimeFormat("ko-KR", {hour: "2-digit", minute: "2-digit", hour12: false}).format(new Date()); }
 clock(); setInterval(clock, 30000); render();
 if (native) { check(); setInterval(check, 5000); }

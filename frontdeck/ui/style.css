@@ -7,6 +7,8 @@ header { display: flex; align-items: center; justify-content: space-between; mar
 .eyebrow { color: #7f8899; font-size: 10px; letter-spacing: .18em; font-weight: 700; }
 h1 { font-size: 28px; letter-spacing: -.04em; line-height: 1.1; margin: 6px 0 0; font-weight: 600; }
 .settings { width: 48px; height: 48px; padding: 13px; background: #1d212b; border-radius: 15px; }
+.header-actions { display: flex; flex-shrink: 0; gap: 8px; margin-left: 12px; }
+.music { color: #7cdcb1; background: #1b332d; }
 svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .connection { color: #8c96a8; font-size: 12px; display: flex; align-items: center; gap: 7px; margin-bottom: 18px; min-height: 18px; }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: #667085; }

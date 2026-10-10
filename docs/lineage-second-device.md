@@ -52,6 +52,8 @@ FrontDeck을 설치·PC와 인증 연결하고 기본 홈으로 설정했습니�
 
 첫 FrontDeck 재부팅 시험에서는 비밀번호 없는 잠금 화면과 절전 상태가 패널을 가렸습니다. 1.0.1에 앱 실행 시 화면 켜기·비보안 잠금 화면 닫기를 추가했습니다. 설치된 APK의 SHA-256이 빌드 파일과 일치하며, 다시 재부팅한 뒤 별도 깨우기·잠금 해제·앱 시작 명령 없이 `mWakefulness=Awake`, 기본 홈과 최상위 앱 `dev.tossfront.deck/.DeckActivity`, 화면의 ‘PC 연결됨’을 확인했습니다. PC에서 실행 중인 감시가 ADB reverse 연결을 자동 복원했습니다. PIN·패턴·비밀번호가 있는 기기는 사용자가 잠금을 해제해야 합니다.
 
-![실물 재부팅 후 자동 실행·PC 연결된 FrontDeck 1.0.1.](images/lineage-frontdeck-device.png)
+이후 FrontDeck 1.1.0과 FrontRecord 1.9.8·YouTube 웹 2.3을 설치했습니다. 상단 음표 버튼으로 뮤직플레이어를 열고 홈 동작으로 PC 제어 패널에 돌아올 수 있습니다. 실제 제목·재생 시간·일시정지·재생·구간 이동과 오디오 파형, Three.js 표시를 검증했습니다. 1.1.0 재부팅 후 패널·PC 연결과 음악 앱 권한 유지도 확인했습니다. [음악 앱 검증과 사용법](frontrecord.md).
+
+![실물 재부팅 후 자동 실행·PC 연결된 FrontDeck 1.1.0.](images/lineage-frontdeck-device.png)
 
 기기 자체 오디오·카메라·Bluetooth와 모든 단축키의 대상 앱별 동작은 아직 실물 검증 전입니다. 제조사 WFD/HDCP 서비스 오류 기록이 남아 무선 화면 전송의 정상 동작을 보장하지 않습니다. 펌웨어 이미지·기기 식별값·개인 데이터·로컬 분석 산출물은 저장소에 포함하지 않습니다.

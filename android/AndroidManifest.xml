@@ -1,6 +1,7 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tossfront.deck" android:versionCode="2" android:versionName="1.0.1">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.tossfront.deck" android:versionCode="3" android:versionName="1.1.0">
   <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
   <uses-permission android:name="android.permission.INTERNET" />
+  <queries><package android:name="dev.tossfront.record" /></queries>
   <application android:label="FrontDeck" android:icon="@drawable/ic_deck" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:debuggable="false" android:networkSecurityConfig="@xml/network_security_config">
     <activity android:name=".DeckActivity" android:exported="true" android:launchMode="singleTask" android:configChanges="orientation|screenSize|keyboardHidden" android:screenOrientation="portrait">
       <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
