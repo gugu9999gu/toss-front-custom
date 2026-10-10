@@ -26,7 +26,20 @@
     "cancel_discards_unsent_movement": true,
     "ime_composition_guard": true
   },
-  "second_device_updated": false,
+  "second_device_updated": true,
+  "physical_second_device": {
+    "version": "1.4.0",
+    "version_code": 7,
+    "android_sdk": 36,
+    "installed_apk_sha256": "2fea2c297bcbdbe62be292d36db9eb5e31f3d62d8530a07658dab5b67e9e0cc0",
+    "wifi_authenticated_connection": true,
+    "usb_reverse_present": false,
+    "touchpad_screen_and_input_tabs_visible": true,
+    "bluetooth_connection_menu_present": true,
+    "bluetooth_pairing_and_input_verified": false,
+    "home_and_music_apps_preserved": true,
+    "custom_pc_config_and_token_preserved": true
+  },
   "bluetooth_direct_hid": false,
   "requires_pc_companion": true
 }
