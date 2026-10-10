@@ -1,0 +1,32 @@
+{
+  "date_kst": "2026-10-10",
+  "version": "1.4.0",
+  "first_device_installed_apk_sha256": "2fea2c297bcbdbe62be292d36db9eb5e31f3d62d8530a07658dab5b67e9e0cc0",
+  "python_tests_passed": 43,
+  "javascript_gesture_tests_passed": true,
+  "bluetooth_os_bonding": true,
+  "bluetooth_authenticated_input_with_wifi_disabled": true,
+  "usb_reverse_present": false,
+  "physical_first_device": {
+    "pointer_move": true,
+    "left_right_click": true,
+    "screen_keyboard_key": true,
+    "bluetooth_reconnect_after_server_restart": true,
+    "wifi_to_bluetooth_switch": true,
+    "home_and_music_apps_preserved": true,
+    "custom_pc_config_and_token_preserved": true
+  },
+  "windows_fixture_authenticated_loopback": {
+    "unicode_korean_and_emoji": true,
+    "vertical_and_horizontal_wheel": true
+  },
+  "javascript_events": {
+    "two_finger_scroll_and_right_tap": true,
+    "one_inflight_movement_with_slow_radio": true,
+    "cancel_discards_unsent_movement": true,
+    "ime_composition_guard": true
+  },
+  "second_device_updated": false,
+  "bluetooth_direct_hid": false,
+  "requires_pc_companion": true
+}

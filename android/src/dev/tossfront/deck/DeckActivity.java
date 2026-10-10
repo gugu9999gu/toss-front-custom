@@ -1,6 +1,10 @@
 package dev.tossfront.deck;
 
 import android.app.Activity;
+import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.pm.PackageManager;
 import android.app.AlertDialog;
 import android.app.KeyguardManager;
 import android.content.Intent;
@@ -30,12 +34,14 @@ import javax.net.ssl.HttpsURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.ArrayList;
 
 public final class DeckActivity extends Activity {
     private WebView web;
     private SharedPreferences preferences;
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private volatile boolean destroyed = false;
+    private final BluetoothTransport bluetooth = new BluetoothTransport();
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -109,7 +115,7 @@ public final class DeckActivity extends Activity {
     @Override protected void onResume() { super.onResume(); dismissUnsecuredKeyguard(); if (web != null) refresh(); }
     @Override public void onBackPressed() { web.evaluateJavascript("window.FrontDeck && window.FrontDeck.back()", null); }
     @Override protected void onDestroy() {
-        destroyed = true; network.shutdownNow();
+        destroyed = true; bluetooth.destroy(); network.shutdownNow();
         web.removeJavascriptInterface("NativeDeck"); web.destroy();
         super.onDestroy();
     }
@@ -122,9 +128,11 @@ public final class DeckActivity extends Activity {
         String host = intent.getStringExtra("wireless_host");
         String fingerprint = intent.getStringExtra("wireless_fingerprint");
         int port = intent.getIntExtra("wireless_port", 38766);
+        String bluetoothAddress = intent.getStringExtra("bluetooth_address"); intent.removeExtra("bluetooth_address");
         intent.removeExtra("pairing_code");
         intent.removeExtra("wireless_host"); intent.removeExtra("wireless_fingerprint"); intent.removeExtra("wireless_port");
         if (pin != null && pin.matches("[0-9]{8}")) {
+            if (bluetoothAddress != null) { pairBluetooth(pin, bluetoothAddress); return; }
             try { pair(pin, host == null ? ConnectionTarget.usb() : ConnectionTarget.wifi(host, port, fingerprint)); }
             catch (IllegalArgumentException invalid) { Toast.makeText(this, "무선 연결 정보를 확인하세요", Toast.LENGTH_SHORT).show(); }
         }
@@ -139,6 +147,7 @@ public final class DeckActivity extends Activity {
             try {
                 result = call("pair", new JSONObject().put("pin", pin), target, "");
                 if (result.has("token")) {
+                    bluetooth.close();
                     preferences.edit().putString("token", result.getString("token"))
                         .putString("mode", target.wireless ? "wifi" : "usb").putString("host", target.host)
                         .putInt("port", target.port).putString("fingerprint", target.fingerprint).commit();
@@ -156,11 +165,14 @@ public final class DeckActivity extends Activity {
         return result;
     }
     private JSONObject call(String route, JSONObject body) throws Exception {
+        if (preferences.getString("mode", "usb").equals("bluetooth")) {
+            return bluetooth.call(preferences.getString("bluetooth_address", ""), route, body, preferences.getString("token", ""));
+        }
         return call(route, body, target(), preferences.getString("token", ""));
     }
     private JSONObject call(String route, JSONObject body, ConnectionTarget target, String token) throws Exception {
         boolean read = route.equals("config") || route.equals("windows") || route.equals("apps") || route.equals("editor");
-        if (!read && !route.equals("action") && !route.equals("pair") && !route.equals("focus") && !route.equals("save") && !route.equals("delete")) return error("지원하지 않는 요청입니다.");
+        if (!read && !route.equals("action") && !route.equals("pair") && !route.equals("focus") && !route.equals("save") && !route.equals("delete") && !route.equals("input")) return error("지원하지 않는 요청입니다.");
         if (!route.equals("pair") && token.isEmpty()) return error("설정에서 PC 연결 코드를 입력하세요.");
         HttpURLConnection connection = (HttpURLConnection) new URL(target.baseUrl() + "/api/" + route).openConnection();
         if (target.wireless) target.secure((HttpsURLConnection) connection);
@@ -171,7 +183,7 @@ public final class DeckActivity extends Activity {
         try {
             if (!read) {
                 byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                if (bytes.length > (route.equals("save") ? 8192 : 2048)) return error("요청이 너무 큽니다.");
+                if (bytes.length > (route.equals("save") || route.equals("input") ? 8192 : 2048)) return error("요청이 너무 큽니다.");
                 connection.setRequestMethod("POST"); connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setFixedLengthStreamingMode(bytes.length);
@@ -200,8 +212,8 @@ public final class DeckActivity extends Activity {
     }
     private void showSettings() {
         String mode = preferences.getString("mode", "usb");
-        new AlertDialog.Builder(this).setTitle("FrontDeck 설정 · " + (mode.equals("wifi") ? "Wi-Fi" : "USB"))
-            .setItems(new String[] {"Wi-Fi 연결", "USB 연결 코드 입력", "뮤직플레이어 열기", "Android 설정", "기본 홈 선택"}, (dialog, which) -> {
+        new AlertDialog.Builder(this).setTitle("FrontDeck 설정 · " + (mode.equals("wifi") ? "Wi-Fi" : mode.equals("bluetooth") ? "Bluetooth" : "USB"))
+            .setItems(new String[] {"Wi-Fi 연결", "USB 연결 코드 입력", "뮤직플레이어 열기", "Android 설정", "기본 홈 선택", "Bluetooth 연결"}, (dialog, which) -> {
                 if (which == 0) {
                     showWireless();
                 } else if (which == 1) {
@@ -214,11 +226,64 @@ public final class DeckActivity extends Activity {
                             else Toast.makeText(this, "8자리 코드를 입력하세요", Toast.LENGTH_SHORT).show();
                         }).setNegativeButton("취소", null).show();
                 } else if (which == 2) { openMusic(); }
+                else if (which == 5) { showBluetooth(); }
                 else {
                     try { startActivity(new Intent(which == 3 ? Settings.ACTION_SETTINGS : Settings.ACTION_HOME_SETTINGS)); }
                     catch (Exception unavailable) { Toast.makeText(this, "설정을 열 수 없습니다", Toast.LENGTH_SHORT).show(); }
                 }
             }).setNegativeButton("닫기", null).show();
+    }
+    private boolean bluetoothPermission() {
+        return Build.VERSION.SDK_INT < 31 || (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&
+            checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED);
+    }
+    @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(request, permissions, results);
+        if (request == 40) {
+            if (bluetoothPermission()) showBluetooth();
+            else Toast.makeText(this, "Bluetooth 연결에 주변 기기 권한이 필요합니다", Toast.LENGTH_LONG).show();
+        }
+    }
+    private void pairBluetooth(String pin, String address) {
+        if (!bluetoothPermission()) { Toast.makeText(this, "설정 → Bluetooth 연결에서 주변 기기 권한을 허용하세요", Toast.LENGTH_LONG).show(); return; }
+        if (address == null || !address.matches("(?i)[0-9a-f]{2}(:[0-9a-f]{2}){5}")) return;
+        network.execute(() -> {
+            android.util.Log.i("FrontDeckConnection", "Bluetooth pairing started");
+            JSONObject result;
+            try {
+                result = bluetooth.call(address, "pair", new JSONObject().put("pin", pin), "");
+                if (result.has("token")) preferences.edit().putString("token", result.getString("token"))
+                    .putString("mode", "bluetooth").putString("bluetooth_address", address).commit();
+            } catch (Exception unavailable) {
+                android.util.Log.w("FrontDeckConnection", "Bluetooth pairing failed: " + unavailable.getClass().getSimpleName());
+                result = error("PC의 Bluetooth 연결 프로그램·페어링·연결 코드를 확인하세요");
+            }
+            android.util.Log.i("FrontDeckConnection", result.has("token") ? "Bluetooth pairing complete" : "Bluetooth pairing rejected");
+            final String message = result.has("token") ? "Bluetooth로 PC에 연결됐습니다" : result.optString("error", "연결 실패");
+            runOnUiThread(() -> { if (!destroyed) { Toast.makeText(this, message, Toast.LENGTH_LONG).show(); refresh(); } });
+        });
+    }
+    private void showBluetooth() {
+        if (!bluetoothPermission()) { requestPermissions(new String[] {Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN}, 40); return; }
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        if (adapter == null) { Toast.makeText(this, "Bluetooth를 지원하지 않는 기기입니다", Toast.LENGTH_LONG).show(); return; }
+        if (!adapter.isEnabled()) { startActivity(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)); return; }
+        ArrayList<BluetoothDevice> devices = new ArrayList<>(adapter.getBondedDevices());
+        devices.sort((a, b) -> String.valueOf(a.getName()).compareToIgnoreCase(String.valueOf(b.getName())));
+        String[] names = new String[devices.size() + 1];
+        for (int n = 0; n < devices.size(); n++) names[n] = devices.get(n).getName() + " · " + devices.get(n).getAddress();
+        names[devices.size()] = "새 PC 페어링 · Android Bluetooth 설정";
+        new AlertDialog.Builder(this).setTitle("연결할 PC 선택").setItems(names, (dialog, selected) -> {
+            if (selected == devices.size()) { startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)); return; }
+            EditText pin = new EditText(this); pin.setSingleLine(true); pin.setInputType(InputType.TYPE_CLASS_NUMBER); pin.setHint("8자리 연결 코드");
+            new AlertDialog.Builder(this).setTitle("Bluetooth로 PC 연결")
+                .setMessage("PC 프로그램을 -Bluetooth 옵션으로 실행하고, PC 연결 창의 8자리 코드를 입력하세요.")
+                .setView(pin).setPositiveButton("연결", (d, w) -> {
+                    String code = pin.getText().toString().trim();
+                    if (code.matches("[0-9]{8}")) pairBluetooth(code, devices.get(selected).getAddress());
+                    else Toast.makeText(this, "8자리 연결 코드를 입력하세요", Toast.LENGTH_SHORT).show();
+                }).setNegativeButton("취소", null).show();
+        }).setNegativeButton("닫기", null).show();
     }
     private void showWireless() {
         LinearLayout form = new LinearLayout(this); form.setOrientation(LinearLayout.VERTICAL);
@@ -264,7 +329,7 @@ public final class DeckActivity extends Activity {
         @JavascriptInterface public void request(final String id, final String route, final String raw) {
             if (id == null || !id.matches("[0-9]{1,10}") || raw == null || raw.length() > 8192 ||
                 (!"config".equals(route) && !"action".equals(route) && !"windows".equals(route) && !"apps".equals(route) &&
-                 !"editor".equals(route) && !"focus".equals(route) && !"save".equals(route) && !"delete".equals(route))) return;
+                 !"editor".equals(route) && !"focus".equals(route) && !"save".equals(route) && !"delete".equals(route) && !"input".equals(route))) return;
             network.execute(() -> {
                 JSONObject result;
                 try { result = call(route, new JSONObject(raw)); }

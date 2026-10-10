@@ -16,9 +16,12 @@ def main():
     parser.add_argument("--serial", required=True); parser.add_argument("--adb")
     parser.add_argument("--install", action="store_true")
     parser.add_argument('--wireless', action='store_true', help='초기 USB 설치 후 PC의 인증서로 Wi-Fi 연결 정보를 저장합니다.')
+    parser.add_argument('--bluetooth', action='store_true', help='OS에서 페어링한 PC에 암호화된 Bluetooth로 연결합니다.')
     parser.add_argument("--home", action="store_true", help="FrontDeck을 기본 홈으로 설정합니다.")
     parser.add_argument("--state-dir", type=Path, default=Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local/share")) / "FrontDeck")
     args = parser.parse_args()
+    if args.bluetooth and args.wireless:
+        raise RuntimeError('설정할 연결 방식을 하나만 선택하세요.')
     device = Device(args.serial, args.adb); device.inspect()
     with urlopen("http://127.0.0.1:38765/api/health", timeout=3) as response: health = json.load(response)
     if health.get("app") != "FrontDeck" or health.get("dry_run") is not False:
@@ -32,7 +35,7 @@ def main():
         if installed.intersection(old):
             raise RuntimeError("토스 앱이 남아 있습니다. 기기별 백업과 토스 자동 복귀 제거를 먼저 완료하세요.")
     if args.install:
-        apk = ROOT / "dist/FrontDeck-1.3.1.apk"
+        apk = ROOT / "dist/FrontDeck-1.4.0.apk"
         report = json.loads((ROOT / "build/android/verification.json").read_text(encoding="utf-8"))
         if report["package"] != PACKAGE or hashlib.sha256(apk.read_bytes()).hexdigest() != report["sha256"]:
             raise RuntimeError("빌드 검증 결과와 APK가 다릅니다. 다시 빌드하세요.")
@@ -41,7 +44,15 @@ def main():
     if not device.run("shell", "pm", "path", "--user", "0", PACKAGE).startswith("package:"):
         raise RuntimeError("FrontDeck APK가 설치돼 있지 않습니다. --install을 사용하세요.")
     command = ['shell', 'am', 'start', '-n', PACKAGE + '/.DeckActivity', '--es', 'pairing_code', str(bootstrap['pin'])]
-    if args.wireless:
+    if args.bluetooth:
+        import re
+        bluetooth = bootstrap.get('bluetooth')
+        if not bluetooth or not health.get('bluetooth_enabled') or not re.fullmatch(r'(?i)[0-9a-f]{2}(:[0-9a-f]{2}){5}', bluetooth['address']):
+            raise RuntimeError('PC 프로그램을 -Bluetooth 옵션으로 실행하고 PC와 기기를 먼저 페어링하세요.')
+        for permission in ('BLUETOOTH_CONNECT', 'BLUETOOTH_SCAN'):
+            device.run('shell', 'pm', 'grant', '--user', '0', PACKAGE, 'android.permission.' + permission)
+        command += ['--es', 'bluetooth_address', bluetooth['address']]
+    elif args.wireless:
         from sys import path as module_path
         module_path.insert(0, str(ROOT))
         from frontdeck.wireless import lan_address

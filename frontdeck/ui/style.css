@@ -79,3 +79,17 @@ footer { display: flex; align-items: center; gap: 8px; height: 42px; padding-top
 @media (max-height: 700px) { .tile { gap: 5px; padding: 4px; }.tile .icon { width: 22px; height: 22px; flex-shrink: 0; }.tile .label { font-size: 12px; line-height: 1.2; } }
 @media (hover: hover) and (pointer: fine) { .tile:hover:enabled { filter: brightness(1.13); }.settings:hover { background: #2b3240; } }
 @media (prefers-reduced-motion: reduce) { .tile { transition: none; }.tile:active, .tile.pressed { transform: none; } }
+.input-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; overscroll-behavior: contain; }
+#tools { margin-bottom: 10px; } #tools button { height: 38px; font-size: 13px; }
+#profiles { margin-bottom: 12px; } #profiles button { height: 36px; }
+#touchpad { position: relative; flex: 1; min-height: 180px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; touch-action: none; overflow: hidden; user-select: none; background: radial-gradient(ellipse at top, #233145, #171e29 75%); border: 1px solid #334157; border-radius: 24px; color: #9eb2cd; text-align: center; font-size: 12px; line-height: 1.8; }
+#touchpad strong { font-size: 22px; color: #d6e6fa; font-weight: 500; }.pad-symbol { font-size: 48px; color: #76a9eb; }
+#touch-dot { position: absolute; width: 28px; height: 28px; border-radius: 50%; background: #81b9ff40; border: 1px solid #81b9ff; transform: translate(-50%, -50%); pointer-events: none; }
+.mouse-buttons { display: flex; gap: 10px; }.mouse-buttons button { flex: 1; min-height: 52px; }
+.input-key { min-height: 44px; background: #263244; border: 1px solid #35475f; border-radius: 10px; font-size: 13px; }
+.input-key:disabled { opacity: .4; }.input-key:active { background: #436082; }.input-key[aria-pressed=true] { background: #8ab9f5; color: #102136; }
+.sensitivity { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #98aac4; flex-shrink: 0; }.sensitivity input { flex: 1; width: 100px; min-height: 36px; padding: 0; accent-color: #8ab9f5; }.sensitivity span { width: 34px; }
+#keyboard-panel { gap: 10px; } .input-hint { color: #8296b1; font-size: 11px; margin: 0; }
+#keyboard-keys { display: flex; flex-direction: column; gap: 6px; }.key-row { display: flex; gap: 4px; }.key-row button { min-width: 0; flex: 1; padding: 0; min-height: 40px; font-size: 12px; }
+.text-label { color: #a4b7d1; font-size: 12px; margin-top: 4px; } #pc-text { flex-shrink: 0; } #send-text { min-height: 46px; flex: none; background: #8ab9f5; color: #102136; }
+@media (max-height: 700px) { .deck { padding-top: 16px; } header { margin-bottom: 10px; }.connection { margin-bottom: 10px; } .key-row button { min-height: 30px; } #keyboard-panel { gap: 8px; } #keyboard-keys { gap: 4px; } #pc-text { min-height: 46px; resize: none; } }

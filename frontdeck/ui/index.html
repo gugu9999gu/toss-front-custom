@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="icons.js" defer></script>
   <script src="app.js" defer></script>
+  <script src="input.js" defer></script>
 </head>
 <body>
   <main class="deck">
@@ -21,12 +22,24 @@
       </div>
     </header>
     <div class="connection" role="status"><span class="dot"></span><span id="connection-text">PC 연결 확인 중</span><span id="clock" aria-hidden="true"></span></div>
+    <nav id="tools" aria-label="PC 제어 방식"><button data-mode="panel" aria-pressed="true">버튼</button><button data-mode="touchpad" aria-pressed="false">터치패드</button><button data-mode="keyboard" aria-pressed="false">키보드</button></nav>
     <nav id="profiles" aria-label="버튼 모음"></nav>
     <section id="buttons" class="buttons" aria-label="PC 제어 버튼"></section>
     <div id="pager" class="pager" hidden><button id="page-prev" aria-label="이전 페이지">‹</button><span id="page-number"></span><button id="page-next" aria-label="다음 페이지">›</button></div>
     <section class="taskbar" aria-label="실행 중인 PC 프로그램">
       <div class="taskbar-heading"><span>실행 중인 창</span><span id="window-count">0</span></div>
       <div id="windows" class="windows"><p class="empty-windows">PC 연결 후 열린 창이 표시됩니다</p></div>
+    </section>
+    <section id="touchpad-panel" class="input-panel" hidden aria-label="PC 터치패드">
+      <div id="touchpad" role="application" aria-label="한 손가락 이동·탭 클릭, 두 손가락 스크롤·탭 우클릭"><span class="pad-symbol">↗</span><strong>PC 터치패드</strong><span>한 손가락 이동 · 탭 클릭<br>두 손가락 스크롤 · 탭 우클릭</span><i id="touch-dot" hidden></i></div>
+      <div class="mouse-buttons"><button class="input-key" data-click="left">왼쪽 클릭</button><button class="input-key" data-click="right">오른쪽 클릭</button></div>
+      <label class="sensitivity">커서 속도<input id="pointer-speed" type="range" min="1" max="4" step="0.25" value="2"><span id="speed-value">2×</span></label>
+    </section>
+    <section id="keyboard-panel" class="input-panel" hidden aria-label="PC 키보드">
+      <p class="input-hint">PC에서 입력할 창을 선택한 뒤 사용하세요</p>
+      <div id="keyboard-keys"></div>
+      <label class="text-label" for="pc-text">한글·문장 입력</label><textarea id="pc-text" rows="1" maxlength="512" placeholder="여기에 입력하고 PC로 보내세요" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+      <button id="send-text" class="input-key primary">PC로 텍스트 보내기</button>
     </section>
     <footer><span id="feedback" role="status">버튼을 눌러 PC를 제어하세요</span><span class="mark">F<span>2</span></span></footer>
   </main>

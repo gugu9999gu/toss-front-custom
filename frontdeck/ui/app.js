@@ -21,7 +21,8 @@ function request(route, body) {
 function requestId() { return Date.now().toString(36) + "_" + (++sequence).toString(36) + "_" + Math.random().toString(36).slice(2, 10); }
 function status(value, message) {
   connected = value; document.body.classList.toggle("connected", value); $("connection-text").textContent = message;
-  document.querySelectorAll(".tile,.window").forEach(b => b.disabled = Boolean(b.dataset.busy) || (native && !connected));
+  document.querySelectorAll(".tile,.window,.input-key").forEach(b => b.disabled = Boolean(b.dataset.busy) || (native && !connected));
+  if (!value && window.DeckInput) window.DeckInput.cancel();
 }
 function feedback(message) { $("feedback").textContent = message; }
 function appGraphic(holder, image, fallback) {
@@ -48,7 +49,7 @@ function render() {
   });
   const profile = profiles.find(p => p.id === active), grid = $("buttons"); grid.replaceChildren();
   const pages = Math.max(1, Math.ceil(profile.actions.length / 12)); page = Math.max(0, Math.min(page, pages - 1));
-  $("pager").hidden = pages === 1; $("page-number").textContent = `${page + 1} / ${pages}`;
+  $("pager").dataset.pages = pages; $("pager").hidden = pages === 1 || (window.DeckInput && window.DeckInput.mode !== "panel"); $("page-number").textContent = `${page + 1} / ${pages}`;
   $("page-prev").disabled = page === 0; $("page-next").disabled = page === pages - 1;
   if (!profile.actions.length) {
     const b = document.createElement("button"); b.className = "empty-grid"; b.textContent = "+ 버튼을 추가해 나만의 패널을 만드세요";
@@ -75,7 +76,7 @@ function render() {
 }
 async function check() {
   if (checking || !native || document.hidden) return; checking = true;
-  try { const next = await request("config"); if (JSON.stringify(next) !== JSON.stringify(config)) adopt(next); if (!connected) feedback("버튼을 눌러 PC를 제어하세요"); status(true, next.transport === "wifi" ? "PC 연결됨 · Wi-Fi" : "PC 연결됨"); }
+  try { const next = await request("config"); if (JSON.stringify(next) !== JSON.stringify(config)) adopt(next); if (!connected) feedback("버튼을 눌러 PC를 제어하세요"); status(true, next.transport === "wifi" ? "PC 연결됨 · Wi-Fi" : next.transport === "bluetooth" ? "PC 연결됨 · Bluetooth" : "PC 연결됨 · USB"); }
   catch (error) { status(false, "PC 연결 확인 필요"); feedback(error.message); } finally { checking = false; }
 }
 function renderWindows(rows) {
@@ -107,7 +108,7 @@ function renderWindows(rows) {
   }); list.scrollLeft = left;
 }
 async function checkWindows() {
-  if (!native || !connected || windowChecking || document.hidden || !$("editor").hidden) return; windowChecking = true;
+  if (!native || !connected || windowChecking || document.hidden || !$("editor").hidden || (window.DeckInput && window.DeckInput.mode !== "panel")) return; windowChecking = true;
   try { const result = await request("windows"); renderWindows(result.windows); }
   catch (_) {} finally { windowChecking = false; }
 }

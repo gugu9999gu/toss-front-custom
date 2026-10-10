@@ -29,7 +29,8 @@ KEYS = {**{chr(n): n for n in range(65, 91)}, **{str(n): n + 48 for n in range(1
         "CTRL": 0x11, "ALT": 0x12, "SHIFT": 0x10, "WIN": 0x5B,
         "TAB": 0x09, "ENTER": 0x0D, "ESC": 0x1B, "SPACE": 0x20,
         "LEFT": 0x25, "UP": 0x26, "RIGHT": 0x27, "DOWN": 0x28,
-        "HOME": 0x24, "END": 0x23, "DELETE": 0x2E, "BACKSPACE": 0x08}
+        "HOME": 0x24, "END": 0x23, "DELETE": 0x2E, "BACKSPACE": 0x08,
+        "PAGEUP": 0x21, "PAGEDOWN": 0x22, "INSERT": 0x2D, "CAPS": 0x14, "HANGUL": 0x15}
 MEDIA = {"MUTE": 0xAD, "VOLUME_DOWN": 0xAE, "VOLUME_UP": 0xAF,
          "NEXT": 0xB0, "PREVIOUS": 0xB1, "STOP": 0xB2, "PLAY_PAUSE": 0xB3}
 TONES = {"blue", "violet", "green", "slate", "red"}
@@ -153,7 +154,7 @@ class WindowsExecutor:
         user32.GetAsyncKeyState.argtypes = [ctypes.c_int]
         user32.GetAsyncKeyState.restype = ctypes.c_short
         owned = [key for key in keys if not user32.GetAsyncKeyState(key) & 0x8000]
-        extended = {0x5B, 0x25, 0x26, 0x27, 0x28, 0x24, 0x23, 0x2E, *MEDIA.values()}
+        extended = {0x5B, 0x21, 0x22, 0x25, 0x26, 0x27, 0x28, 0x24, 0x23, 0x2D, 0x2E, *MEDIA.values()}
         def event(key, released):
             item = INPUT(type=1)
             item.ki = KEYBDINPUT(key, 0, (1 if key in extended else 0) | (2 if released else 0), 0, 0)
@@ -192,6 +193,9 @@ class Controller:
         self.lan_last_peer = None
         self.bootstrap_path = None
         self.setup_nonce = secrets.token_urlsafe(32)
+        self.bluetooth = None
+        from frontdeck.input_control import InputController, NativeInput
+        self.input = InputController(NativeInput(KEYS, WindowsExecutor.send_keys, executor.dry_run))
 
     def note_wireless_request(self, peer):
         with self.lock:
@@ -434,16 +438,20 @@ class Handler(BaseHTTPRequestHandler):
     def connection_page(self):
         from frontdeck.wireless import confirmation_code
         c = self.server.controller
-        if not c.wireless:
-            return self.reply(200, '<html lang="ko"><meta charset="utf-8"><p>PC 프로그램을 -Wireless 옵션으로 실행하세요.</p></html>'.encode(), 'text/html; charset=utf-8')
-        address = html.escape(c.wireless['host'])
-        code = confirmation_code(c.wireless['fingerprint'])
+        wifi = ''
+        if c.wireless:
+            address = html.escape(c.wireless['host'])
+            code = confirmation_code(c.wireless['fingerprint'])
+            wifi = f'<section>Wi-Fi PC 주소<b>{address}</b>기기 확인 코드<b>{code}</b><p>같은 공유기에 연결하고 FrontDeck 설정 → Wi-Fi 연결에서 입력하세요.</p></section>'
+        bluetooth = ''
+        if c.bluetooth:
+            name = html.escape(c.bluetooth.info['name'])
+            bluetooth = f'<section>Bluetooth PC 이름<b>{name}</b><p>PC와 기기를 OS Bluetooth 설정에서 페어링한 뒤, FrontDeck 설정 → Bluetooth 연결에서 이 PC와 아래 연결 코드를 선택하세요.</p></section>'
         with c.lock:
             pin = c.pin if time.monotonic() < c.pin_deadline else '만료됨'
         body = f'''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FrontDeck 무선 연결</title><style>body{{font:17px system-ui;background:#101217;color:#eef3f7;margin:0;padding:48px 24px}}main{{max-width:560px;margin:auto}}h1{{font-size:32px}}small,p{{color:#aab7c6;line-height:1.7}}section{{padding:22px;background:#1c222b;border-radius:18px;margin:16px 0}}b{{display:block;font-size:28px;letter-spacing:2px;margin:8px 0}}button{{font:inherit;border:0;border-radius:12px;background:#70dcb3;color:#09251b;padding:14px 20px;cursor:pointer}}</style>
-<main><small>FRONTDECK</small><h1>Wi-Fi로 PC 연결</h1><p>기기를 같은 공유기의 Wi-Fi에 연결하고 FrontDeck 설정 → Wi-Fi 연결을 열어 주세요. PC는 유선 LAN으로 연결돼 있어도 됩니다.</p>
-<section>PC 주소<b>{address}</b>연결 코드 · 5분<b>{pin}</b></section><section>기기 확인 코드<b>{code}</b><p>기기에 표시되는 코드와 같으면 연결을 완료하세요.</p></section>
+<main><small>FRONTDECK</small><h1>PC 연결</h1>{wifi}{bluetooth}<section>연결 코드 · 5분<b>{pin}</b></section>
 <form method="post" action="/connect/renew"><input type="hidden" name="nonce" value="{c.setup_nonce}"><button>새 연결 코드</button></form><p>한 번 연결하면 주소와 연결 정보가 기기에 저장됩니다. PC 프로그램과 기기의 네트워크 연결을 유지해 주세요.</p></main></html>'''
         return self.reply(200, body.encode('utf-8'), 'text/html; charset=utf-8')
 
@@ -454,7 +462,10 @@ class Handler(BaseHTTPRequestHandler):
             c = self.server.controller
             result = {"ok": True, "app": "FrontDeck", "dry_run": c.executor.dry_run, "wireless_enabled": c.wireless is not None}
             if not self.server.is_wireless:
-                result.update(wireless=c.wireless, wireless_authenticated_requests=c.lan_requests, wireless_last_peer=c.lan_last_peer)
+                result.update(wireless=c.wireless, wireless_authenticated_requests=c.lan_requests, wireless_last_peer=c.lan_last_peer,
+                              bluetooth_enabled=c.bluetooth is not None, bluetooth=c.bluetooth.info if c.bluetooth else None,
+                              bluetooth_requests=c.bluetooth.requests if c.bluetooth else 0,
+                              bluetooth_input_requests=c.bluetooth.input_requests if c.bluetooth else 0)
             return self.reply(200, result)
         if self.path in {"/api/config", "/api/windows", "/api/apps", "/api/editor"}:
             if self.headers.get("Origin") is not None:
@@ -478,7 +489,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         assets = {"/preview/": "index.html", "/preview/index.html": "index.html",
                   "/preview/style.css": "style.css", "/preview/app.js": "app.js", "/preview/icons.js": "icons.js",
-                  "/preview/demo.json": "demo.json"}
+                  "/preview/demo.json": "demo.json", "/preview/input.js": "input.js"}
         name = assets.get(self.path)
         if name:
             path = Path(__file__).parent / "ui" / name
@@ -506,7 +517,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if not self.valid_host() or self.headers.get("Origin") is not None:
             return self.reply(403, {"error": "Native paired client required"})
-        if self.path not in {"/api/pair", "/api/action", "/api/focus", "/api/save", "/api/delete"}:
+        if self.path not in {"/api/pair", "/api/action", "/api/focus", "/api/save", "/api/delete", "/api/input"}:
             return self.reply(404, {"error": "Not found"})
         if self.path != "/api/pair" and not self.authorized():
             return self.reply(401, {"error": "PC 연결이 필요합니다."})
@@ -514,7 +525,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(400, {"error": "JSON request required"})
         try:
             length = int(self.headers.get("Content-Length", "0"))
-            if not 0 < length <= (8192 if self.path == "/api/save" else 2048):
+            if not 0 < length <= (8192 if self.path in {"/api/save", "/api/input"} else 2048):
                 return self.reply(413, {"error": "Request too large"})
             self.connection.settimeout(3)
             body = json.loads(self.rfile.read(length))
@@ -530,6 +541,8 @@ class Handler(BaseHTTPRequestHandler):
             status, result = self.server.controller.action(body)
         elif self.path == "/api/focus":
             status, result = self.server.controller.focus(body)
+        elif self.path == "/api/input":
+            status, result = self.server.controller.input.handle(body)
         else:
             status, result = self.server.controller.modify(self.path[5:], body)
         return self.reply(status, result)
@@ -543,6 +556,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument('--lan-host', help='사설 LAN IPv4 주소에 TLS 무선 연결을 추가합니다.')
     parser.add_argument('--lan-port', type=int, default=38766)
+    parser.add_argument('--bluetooth', action='store_true', help='암호화된 Bluetooth RFCOMM 연결을 추가합니다.')
     args = parser.parse_args()
     if not args.config.exists() and args.config == Path(__file__).with_name("config.local.json"):
         args.config.write_bytes(Path(__file__).with_name("config.example.json").read_bytes())
@@ -570,11 +584,21 @@ def main():
             context, fingerprint = ensure_identity(args.state_dir, host)
             wireless_server = FrontDeckServer((host, args.lan_port), controller, context)
             controller.wireless = {'host': host, 'port': args.lan_port, 'fingerprint': fingerprint}
+        if args.bluetooth:
+            from frontdeck.bluetooth import BluetoothServer
+            controller.bluetooth = BluetoothServer(controller)
     except Exception:
         server.server_close()
+        if wireless_server:
+            wireless_server.server_close()
+        if controller.bluetooth:
+            controller.bluetooth.close()
         raise
     controller.bootstrap_path = args.state_dir / 'bootstrap.json'
-    controller.bootstrap_path.write_text(json.dumps({"pin": pin, "port": args.port, "expires_at": time.time() + 300, "pid": os.getpid(), 'wireless': controller.wireless}), encoding="utf-8")
+    controller.bootstrap_path.write_text(json.dumps({"pin": pin, "port": args.port, "expires_at": time.time() + 300, "pid": os.getpid(), 'wireless': controller.wireless,
+                                                    'bluetooth': controller.bluetooth.info if controller.bluetooth else None}), encoding="utf-8")
+    if controller.bluetooth:
+        controller.bluetooth.start()
     if wireless_server:
         threading.Thread(target=wireless_server.serve_forever, daemon=True).start()
     print(f"FrontDeck · http://127.0.0.1:{args.port}/preview/ · 연결 코드: {pin} (5분)", flush=True)
@@ -588,6 +612,8 @@ def main():
         server.server_close()
         if wireless_server:
             wireless_server.shutdown(); wireless_server.server_close()
+        if controller.bluetooth:
+            controller.bluetooth.close()
 
 
 if __name__ == "__main__":

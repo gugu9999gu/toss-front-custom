@@ -18,7 +18,7 @@ PC 앱 실행·단축키·미디어 제어용 자체 터치 패널입니다. Goo
 python tools/build_android.py
 ```
 
-결과는 `dist/FrontDeck-1.3.1.apk`입니다. APK 서명과 SHA-256 검증 결과는 `build/android/verification.json`에 저장합니다. SDK가 다른 경로라면 `--sdk`를 지정합니다. `build/android/frontdeck.keystore`와 비밀번호 파일을 함께 보관해야 기존 앱을 같은 서명으로 업데이트할 수 있습니다. 빌드 파일과 서명키는 Git에서 제외합니다.
+결과는 `dist/FrontDeck-1.4.0.apk`입니다. APK 서명과 SHA-256 검증 결과는 `build/android/verification.json`에 저장합니다. SDK가 다른 경로라면 `--sdk`를 지정합니다. `build/android/frontdeck.keystore`와 비밀번호 파일을 함께 보관해야 기존 앱을 같은 서명으로 업데이트할 수 있습니다. 빌드 파일과 서명키는 Git에서 제외합니다.
 
 ## PC 프로그램
 
@@ -63,6 +63,8 @@ python tools/watch_deck.py --serial DEVICE_SERIAL
 여러 기기를 사용하는 경우 각 기기의 식별값으로 `Start-FrontDeck.ps1 -Serial DEVICE_SERIAL`을 한 번씩 실행합니다. PC 프로그램은 하나를 공유하고 USB 재연결 감시는 기기마다 유지합니다. 같은 기기로 다시 실행하면 기존 감시를 재사용합니다. `Stop-FrontDeck.ps1`은 이 저장소에서 시작한 PC 프로그램과 각 기기의 감시를 함께 종료합니다.
 
 ## 버튼 수정
+
+1.4.0의 [Bluetooth 연결·터치패드·키보드](frontdeck-bluetooth-input.md)는 상단 제어 방식 메뉴에서 선택합니다. 기존 버튼과 작업표시줄은 **버튼** 화면에 유지됩니다. PC 입력 기능은 USB·Wi-Fi·Bluetooth에서 공통으로 사용할 수 있습니다.
 
 1.2.0부터 기기에서 바로 편집할 수 있습니다.
 
