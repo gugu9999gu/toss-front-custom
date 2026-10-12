@@ -23,7 +23,7 @@ def main():
     if info["sdk"] not in ("33", "36"):
         raise SystemExit("Select the intended Toss Front 2 on Android 13 or 16")
     legacy_root = info["sdk"] == "33" and "uid=0(root)" in adb_run(adb, serial, "shell", "id")
-    paths = [ROOT / "dist/FrontRecord-1.9.8.apk"]
+    paths = [ROOT / "dist/FrontRecord-1.9.9.apk"]
     if args.update_web: paths.append(ROOT / "dist/YouTube-Web-2.3.apk")
     if not all(path.is_file() for path in paths): raise SystemExit("Build requested APKs before installation")
     verified = []

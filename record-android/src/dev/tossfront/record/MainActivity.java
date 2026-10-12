@@ -10,8 +10,8 @@ import android.provider.Settings;
 
 public final class MainActivity extends Activity implements RecordPanel.Host {
     private RecordPanel panel;private boolean openingOverlay;
-    @Override public void onCreate(Bundle state){super.onCreate(state);panel=new RecordPanel(this,this,false);setContentView(panel);SystemBars.apply(getWindow(),new Appearance(this));if(getIntent().getBooleanExtra("ask_audio",false))audioPermission();if(getIntent().getBooleanExtra("ask_camera",false))cameraPermission();}
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);if(intent.getBooleanExtra("ask_audio",false))audioPermission();if(intent.getBooleanExtra("ask_camera",false))cameraPermission();}
+    @Override public void onCreate(Bundle state){super.onCreate(state);RecordOverlay.dismissForNavigation();panel=new RecordPanel(this,this,false);setContentView(panel);SystemBars.apply(getWindow(),new Appearance(this));if(getIntent().getBooleanExtra("ask_audio",false))audioPermission();if(getIntent().getBooleanExtra("ask_camera",false))cameraPermission();}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);RecordOverlay.dismissForNavigation();setIntent(intent);if(intent.getBooleanExtra("ask_audio",false))audioPermission();if(intent.getBooleanExtra("ask_camera",false))cameraPermission();}
     @Override protected void onResume(){super.onResume();if(panel!=null){panel.cameraVisible(!openingOverlay&&!RecordOverlay.showing());panel.preferencesChanged();}SessionRepository.get(this).connect();SystemBars.apply(getWindow(),new Appearance(this));}
     @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused)SystemBars.apply(getWindow(),new Appearance(this));}
     public void appearanceChanged(){SystemBars.apply(getWindow(),new Appearance(this));}
