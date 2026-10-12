@@ -18,7 +18,7 @@ PC 앱 실행·단축키·미디어 제어용 자체 터치 패널입니다. Goo
 python tools/build_android.py
 ```
 
-결과는 `dist/FrontDeck-1.4.0.apk`입니다. APK 서명과 SHA-256 검증 결과는 `build/android/verification.json`에 저장합니다. SDK가 다른 경로라면 `--sdk`를 지정합니다. `build/android/frontdeck.keystore`와 비밀번호 파일을 함께 보관해야 기존 앱을 같은 서명으로 업데이트할 수 있습니다. 빌드 파일과 서명키는 Git에서 제외합니다.
+결과는 `dist/FrontDeck-1.4.1.apk`입니다. APK 서명과 SHA-256 검증 결과는 `build/android/verification.json`에 저장합니다. SDK가 다른 경로라면 `--sdk`를 지정합니다. `build/android/frontdeck.keystore`와 비밀번호 파일을 함께 보관해야 기존 앱을 같은 서명으로 업데이트할 수 있습니다. 빌드 파일과 서명키는 Git에서 제외합니다.
 
 ## PC 프로그램
 
@@ -98,7 +98,7 @@ PC에서 설정 파일을 직접 편집할 수도 있으며 이때는 프로그�
 
 ![FrontDeck 1.2.0 브라우저 미리보기. 창 이름은 데모이며 실제 PC 목록이 아닙니다.](images/frontdeck-1.2-preview.png)
 
-기기의 오른쪽 위 설정 버튼에서 **Wi-Fi 연결** 또는 **USB 연결 코드 입력**, Android 설정·기본 홈 선택을 열 수 있습니다. Wi-Fi 연결은 PC 주소와 8자리 코드 입력 후 PC의 기기 확인 코드가 일치하는지 확인합니다. 연결 방식과 인증 정보는 앱 업데이트·재부팅 후에도 저장합니다. 앱은 전체 화면을 유지하고 켜져 있는 동안 화면이 꺼지지 않게 합니다. OS 자체 알림과 토스 DEBUG 문구의 제거는 별도의 기기 전환 설정에서 확인해야 합니다.
+기기의 오른쪽 위 설정 버튼에서 **Wi-Fi 연결**, **USB 연결 코드 입력**, **Bluetooth 연결**, Android 설정·기본 홈 선택을 열 수 있습니다. Wi-Fi 연결은 PC 주소와 8자리 코드 입력 후 PC의 기기 확인 코드가 일치하는지 확인합니다. Bluetooth는 OS에서 페어링한 PC를 선택하면 앱 코드 입력 없이 연결합니다. 연결 방식과 인증 정보는 앱 업데이트·재부팅 후에도 저장합니다. 앱은 전체 화면을 유지하고 켜져 있는 동안 화면이 꺼지지 않게 합니다. OS 자체 알림과 토스 DEBUG 문구의 제거는 별도의 기기 전환 설정에서 확인해야 합니다.
 
 1.0.1은 기본 홈으로 실행될 때 화면을 켜고 비밀번호가 없는 잠금 화면을 닫습니다. PIN·패턴·비밀번호가 설정된 기기의 잠금은 변경하지 않으며 사용자가 직접 잠금 해제해야 합니다. [Android 화면 켜기 API](https://developer.android.com/reference/android/app/Activity#setTurnScreenOn(boolean))와 [잠금 화면 API](https://developer.android.com/reference/android/app/KeyguardManager#requestDismissKeyguard(android.app.Activity,%20android.app.KeyguardManager.KeyguardDismissCallback))를 사용합니다.
 
@@ -106,7 +106,7 @@ PC에서 설정 파일을 직접 편집할 수도 있으며 이때는 프로그�
 
 ## 연결 정보
 
-8자리 연결 코드는 PC 프로그램을 시작한 뒤 5분 동안 유효합니다. 연결을 마친 앱은 별도의 임의 토큰을 앱 내부 저장소에 보관합니다. PC 상태 파일은 `%LOCALAPPDATA%/FrontDeck`에 저장합니다. 이 폴더와 기기 저장소의 인증 정보를 공개하지 않습니다.
+USB·Wi-Fi의 8자리 연결 코드는 PC 프로그램을 시작한 뒤 5분 동안 유효합니다. Bluetooth의 코드 없는 연결은 PC와 기기의 OS 페어링을 확인합니다. 연결을 마친 앱은 별도의 임의 토큰을 앱 내부 저장소에 보관합니다. PC 상태 파일은 `%LOCALAPPDATA%/FrontDeck`에 저장합니다. 이 폴더와 기기 저장소의 인증 정보를 공개하지 않습니다.
 
 브라우저 미리보기는 읽기 전용입니다. 실제 PC 동작 API는 연결 토큰과 허용된 Host를 확인하고 브라우저 Origin이 있는 요청은 거절합니다. 같은 요청 번호의 짧은 재전송은 60초 동안 한 번만 실행합니다. 임의 파일 읽기, PC 화면 수집, 클립보드 내용 조회, 원격 셸 기능은 구현하지 않았습니다.
 

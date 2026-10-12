@@ -1,4 +1,4 @@
-# FrontDeck 1.4.0 · Bluetooth와 PC 입력
+# FrontDeck 1.4.1 · Bluetooth와 PC 입력
 
 Bluetooth에서도 PC 앱 실행·창 전환·커스텀 버튼·작업표시줄 아이콘을 사용합니다. 상단 **버튼 / 터치패드 / 키보드**에서 제어 화면을 전환합니다. 세 화면 모두 USB·Wi-Fi·Bluetooth 연결을 지원합니다. PC에서 FrontDeck 연결 프로그램을 실행해야 합니다.
 
@@ -13,7 +13,9 @@ powershell -NoProfile -File tools/Start-FrontDeck.ps1 -Bluetooth
 
 Wi-Fi도 처음 활성화하려면 `-Wireless -Bluetooth`를 함께 지정합니다. 이미 저장한 Wi-Fi 설정은 유지합니다. 이후 시작 도구는 선택한 연결 방식을 기억합니다. PC 자동 시작 등록은 하지 않습니다.
 
-[PC 연결 창](http://127.0.0.1:38765/connect/)에서 8자리 연결 코드를 확인하고, 기기 FrontDeck 설정 → **Bluetooth 연결**에서 페어링한 PC를 선택한 뒤 코드를 입력합니다. **주변 기기** 권한을 허용합니다. 코드가 만료되면 PC 연결 창의 **새 연결 코드**로 갱신합니다.
+기기 FrontDeck 설정 → **Bluetooth 연결**에서 **주변 기기** 권한을 허용하고 페어링한 PC를 선택합니다. 1.4.1부터 앱의 8자리 입력 없이 바로 연결하며, OS 설정에서 승인한 Bluetooth 페어링은 처음 한 번 필요합니다. 새 PC를 페어링하고 앱으로 돌아오면 PC 목록을 다시 표시합니다. 연결 중에는 진행 상태를 표시하고 성공한 연결 정보를 저장합니다.
+
+PC 연결 프로그램도 이 버전의 코드로 업데이트하고 재시작해야 합니다. 이전 PC 프로그램에 연결하면 업데이트 안내를 표시합니다. USB·Wi-Fi의 8자리 코드 인증은 유지하며 [PC 연결 창](http://127.0.0.1:38765/connect/)에서 발급합니다.
 
 **PC 연결됨 · Bluetooth**가 표시되면 Wi-Fi와 마이크로 USB 데이터 연결 없이 사용할 수 있습니다. C타입 전원은 유지합니다. PC와 기기의 Bluetooth, PC 연결 프로그램을 유지해야 합니다. 연결이 끊어지면 저장한 PC에 재접속하며 다른 PC나 Wi-Fi로 명령을 자동 재전송하지 않습니다.
 
@@ -47,7 +49,7 @@ PC에서 입력할 창을 선택하고 화면 키를 누릅니다. **Ctrl / Alt 
 
 ## 통신과 검증
 
-Bluetooth는 Windows RFCOMM 서버와 Android 보안 RFCOMM 소켓으로 직접 통신합니다. Windows 서버는 OS 인증·암호화를 필수로 설정하고, 앱의 5분 연결 코드·인증 토큰을 추가로 확인합니다. HID 전용 마우스 모드가 아니므로 기존 프로그램 버튼과 창 목록도 함께 제공합니다. SDP 서비스는 FrontDeck의 고유 UUID만 등록합니다. [Windows Bluetooth 소켓 옵션](https://learn.microsoft.com/en-us/windows/win32/bluetooth/bluetooth-and-setsockopt), [Android RFCOMM 연결](https://developer.android.com/develop/connectivity/bluetooth/connect-bluetooth-devices).
+Bluetooth는 Windows RFCOMM 서버와 Android 보안 RFCOMM 소켓으로 직접 통신합니다. Windows 서버는 OS 인증·암호화를 필수로 설정하고, 실제 소켓 상대의 OS 페어링 기록을 `BluetoothGetDeviceInfo`의 `fAuthenticated`로 확인한 뒤 앱 인증 토큰을 발급합니다. 기억한 기기라는 이유만으로 허용하지 않습니다. Bluetooth OS 페어링 승인은 해당 기기에 FrontDeck의 PC 제어 권한을 허용하는 단계입니다. 이후 요청은 토큰으로 인증합니다. 이 코드 없는 토큰 발급은 RFCOMM 연결에서만 제공하며 HTTP·USB·Wi-Fi는 빈 연결 요청을 거절합니다. 1.4.0의 코드 기반 Bluetooth 앱도 계속 지원합니다. HID 전용 마우스 모드가 아니므로 기존 프로그램 버튼과 창 목록도 함께 제공합니다. SDP 서비스는 FrontDeck의 고유 UUID만 등록합니다. [Windows Bluetooth 소켓 옵션](https://learn.microsoft.com/en-us/windows/win32/bluetooth/bluetooth-and-setsockopt), [Windows 페어링 상태](https://learn.microsoft.com/en-us/windows/win32/api/bluetoothapis/ns-bluetoothapis-bluetooth_device_info_struct), [Android RFCOMM 연결](https://developer.android.com/develop/connectivity/bluetooth/connect-bluetooth-devices).
 
 4바이트 길이와 JSON 본문으로 구성한 프레임은 요청 16KiB·응답 4MiB로 제한합니다. 입력 유형·범위·세션·순번을 검증하며 동일 입력을 다시 실행하지 않고 충돌하거나 오래된 순번을 거절합니다. 이동 입력은 기존 버튼 요청과 별도 한도로 처리해 오래 사용해도 버튼 요청 기록 한도를 소진하지 않습니다.
 
@@ -56,3 +58,11 @@ Bluetooth는 Windows RFCOMM 서버와 Android 보안 RFCOMM 소켓으로 직접 
 43개 Python 테스트와 JavaScript 입력 이벤트 테스트를 통과했습니다. Bluetooth 인증·만료·프레임 분할·잘못된 크기·UTF-16·중복 입력·실패 뒤 재실행 차단과 기존 USB/Wi-Fi·버튼 편집·아이콘 검증을 포함합니다. PC 연결 프로그램 재시작 후 재접속과 Wi-Fi에서 Bluetooth로 되돌아오는 연결도 확인했습니다. 개인 PC 주소·기기 식별값·창 제목·인증 정보가 있는 실물 증거는 Git에 넣지 않습니다.
 
 이후 두 번째 기기에도 1.4.0을 설치하고 설치 APK 해시·기본 홈·음악 앱·PC 버튼 및 인증 정보 보존을 확인했습니다. USB reverse가 없는 상태에서 Wi-Fi 인증 요청과 실물 터치패드 화면을 확인했습니다. Bluetooth 연결 메뉴는 설치됐지만 두 번째 기기의 Bluetooth 페어링·입력은 미검증입니다. [두 번째 기기 기록](second-device.md).
+
+## 1.4.1 가상 기기 검증 · 2026-10-12
+
+Android 16 / API 36 가상 기기에 업데이트 APK를 설치하고 설치 파일 해시를 대조했습니다. 별도 가상 기기를 PC 역할의 보안 RFCOMM 상대와 페어링한 뒤, PC를 선택하면 입력창 없이 연결되는 것을 확인했습니다. 앱 연결 요청 본문은 빈 객체였고 시험 서버의 코드가 만료된 상태에서도 토큰 발급·버튼 실행·터치패드 클릭·화면 키 요청을 확인했습니다. 앱을 종료했다 다시 시작한 연결 복원과 업데이트 뒤 저장된 Bluetooth 연결 유지도 확인했습니다. 가상 PC는 현재 PC 제어 처리기를 시험 모드로 사용해 실제 Windows 키·마우스 입력을 보내지 않습니다.
+
+47개 Python 검사와 JavaScript 입력 검사를 통과했습니다. OS 페어링 검사, 기억한 기기의 거부, HTTP의 코드 없는 연결 거부, JSON에서 인증 상태 위조 거부와 기존 코드 연결 호환성을 포함합니다. 별도 Windows 네이티브 API 조회에서 실제 저장된 페어링 기록은 허용하고 알 수 없는 주소는 거절하는 것도 확인했습니다. 이 조회의 소켓 상대는 시험 객체이며 실제 Windows 무선 통신 검증은 아닙니다. 두 실물 기기는 이 버전으로 갱신하지 않았습니다. PC 프로그램은 업데이트하며 기존 설정·인증 정보를 보존합니다.
+
+![Android 시뮬레이터의 코드 없는 PC 선택 화면](images/frontdeck-simple-bluetooth.png)

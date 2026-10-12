@@ -1,0 +1,23 @@
+{
+  "date_kst": "2026-10-12",
+  "version": "1.4.1",
+  "installed_apk_sha256": "931de1a07eb44d98e0b9d14c715d07830d697594dd448a56a9abeca1a0e05917",
+  "android_sdk": 36,
+  "emulator_version": "35.5.10",
+  "virtual_secure_rfcomm": true,
+  "os_bonding": true,
+  "app_code_input_removed": true,
+  "empty_pair_body_verified": true,
+  "expired_app_code_not_used": true,
+  "companion_dispatch_in_dry_run": true,
+  "button_and_input_requests_verified": true,
+  "reconnect_after_cold_launch": true,
+  "python_tests_passed": 47,
+  "javascript_input_tests_passed": true,
+  "native_windows_os_bond_lookup_verified": true,
+  "native_lookup_used_mock_socket_with_real_os_record": true,
+  "pc_companion_updated": true,
+  "pc_buttons_and_credentials_preserved": true,
+  "real_windows_radio_end_to_end_verified": false,
+  "physical_devices_updated": false
+}

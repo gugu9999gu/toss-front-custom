@@ -35,7 +35,7 @@ def write_frame(stream, value):
     stream.sendall(struct.pack('!I', len(data)) + data)
 
 
-def dispatch(controller, message):
+def dispatch(controller, message, *, bonded_peer=False):
     if not isinstance(message, dict) or set(message) != {'version', 'id', 'route', 'token', 'body'}:
         raise ValueError('Invalid request')
     identifier, route, token, body = (message[k] for k in ('id', 'route', 'token', 'body'))
@@ -44,7 +44,13 @@ def dispatch(controller, message):
     if not isinstance(route, str) or route not in {'config', 'windows', 'apps', 'editor', 'pair', 'action', 'focus', 'save', 'delete', 'input'} or not isinstance(body, dict) or not isinstance(token, str) or len(token) > 256:
         raise ValueError('Invalid route')
     if route == 'pair':
-        status, result = controller.pair(body['pin']) if set(body) == {'pin'} else (400, {'error': 'Invalid pairing request'})
+        if not body:
+            # Only our encrypted RFCOMM listener supplies this out-of-band flag.
+            # A JSON field, a remembered device or an HTTP client cannot grant it.
+            status, result = (200, {'ok': True, 'token': controller.token}) if bonded_peer else (403, {'error': 'PC와 기기를 Bluetooth 설정에서 먼저 페어링하세요.'})
+        else:
+            # Keep old clients working while the APK and PC companion are updated.
+            status, result = controller.pair(body['pin']) if set(body) == {'pin'} else (400, {'error': 'Invalid pairing request'})
     elif not hmac.compare_digest(token.encode(), controller.token.encode()):
         status, result = 401, {'error': 'PC 연결이 필요합니다.'}
     elif route in {'config', 'windows', 'apps', 'editor'}:
@@ -86,6 +92,51 @@ class WSAQUERYSET(ctypes.Structure):
                 ('provider', ctypes.c_void_p), ('context', ctypes.c_wchar_p), ('protocols', ctypes.c_uint32),
                 ('protocol', ctypes.c_void_p), ('query', ctypes.c_wchar_p), ('addresses', ctypes.c_uint32),
                 ('csaddr', ctypes.POINTER(CSADDR_INFO)), ('flags', ctypes.c_uint32), ('blob', ctypes.c_void_p)]
+
+
+class DEVICE_INFO(ctypes.Structure):
+    _fields_ = [('size', ctypes.c_uint32), ('address', ctypes.c_uint64), ('device_class', ctypes.c_uint32),
+                ('connected', ctypes.c_int32), ('remembered', ctypes.c_int32), ('authenticated', ctypes.c_int32),
+                ('last_seen', ctypes.c_uint16 * 8), ('last_used', ctypes.c_uint16 * 8), ('name', ctypes.c_wchar * 248)]
+
+
+class RADIO_SEARCH(ctypes.Structure):
+    _fields_ = [('size', ctypes.c_uint32)]
+
+
+def bonded_socket_peer(client):
+    """Check the actual encrypted socket peer against Windows OS bond records."""
+    if client.family != socket.AF_BLUETOOTH or client.proto != socket.BTPROTO_RFCOMM:
+        return False
+    address = client.getpeername()[0]
+    if not isinstance(address, str) or not re.fullmatch(r'(?i)[0-9a-f]{2}(:[0-9a-f]{2}){5}', address):
+        return False
+    api = ctypes.WinDLL('bthprops.cpl')
+    api.BluetoothFindFirstRadio.argtypes = [ctypes.POINTER(RADIO_SEARCH), ctypes.POINTER(ctypes.c_void_p)]
+    api.BluetoothFindFirstRadio.restype = ctypes.c_void_p
+    api.BluetoothFindNextRadio.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)]
+    api.BluetoothFindNextRadio.restype = ctypes.c_int32
+    api.BluetoothFindRadioClose.argtypes = [ctypes.c_void_p]
+    api.BluetoothGetDeviceInfo.argtypes = [ctypes.c_void_p, ctypes.POINTER(DEVICE_INFO)]
+    api.BluetoothGetDeviceInfo.restype = ctypes.c_uint32
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+    params, radio = RADIO_SEARCH(ctypes.sizeof(RADIO_SEARCH)), ctypes.c_void_p()
+    search = api.BluetoothFindFirstRadio(ctypes.byref(params), ctypes.byref(radio))
+    if not search:
+        return False
+    try:
+        while True:
+            try:
+                device = DEVICE_INFO(size=ctypes.sizeof(DEVICE_INFO), address=int(address.replace(':', ''), 16))
+                if api.BluetoothGetDeviceInfo(radio, ctypes.byref(device)) == 0 and device.authenticated:
+                    return True
+            finally:
+                kernel.CloseHandle(radio)
+            if not api.BluetoothFindNextRadio(search, ctypes.byref(radio)):
+                return False
+    finally:
+        api.BluetoothFindRadioClose(search)
 
 
 class Advertisement:
@@ -155,7 +206,8 @@ class BluetoothServer:
             while not self.closed.is_set():
                 message = read_frame(client)
                 try:
-                    reply = dispatch(self.controller, message)
+                    bonded = isinstance(message, dict) and message.get('route') == 'pair' and message.get('body') == {} and bonded_socket_peer(client)
+                    reply = dispatch(self.controller, message, bonded_peer=bonded)
                 except ValueError:
                     raise
                 except Exception:

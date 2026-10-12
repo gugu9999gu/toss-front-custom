@@ -27,7 +27,7 @@ def main():
     if health.get("app") != "FrontDeck" or health.get("dry_run") is not False:
         raise RuntimeError("실제 동작 모드의 FrontDeck PC 프로그램을 먼저 실행하세요.")
     bootstrap = json.loads((args.state_dir / "bootstrap.json").read_text(encoding="utf-8"))
-    if bootstrap["port"] != 38765 or bootstrap["expires_at"] < time.time() or not str(bootstrap["pin"]).isdigit() or len(str(bootstrap["pin"])) != 8:
+    if bootstrap["port"] != 38765 or (not args.bluetooth and (bootstrap["expires_at"] < time.time() or not str(bootstrap["pin"]).isdigit() or len(str(bootstrap["pin"])) != 8)):
         raise RuntimeError("연결 코드가 만료됐습니다. PC 프로그램을 재시작하세요.")
     if args.home:
         old = json.loads((ROOT / "docs/first-device-results.json").read_text(encoding="utf-8"))["removed_packages"]
@@ -35,7 +35,7 @@ def main():
         if installed.intersection(old):
             raise RuntimeError("토스 앱이 남아 있습니다. 기기별 백업과 토스 자동 복귀 제거를 먼저 완료하세요.")
     if args.install:
-        apk = ROOT / "dist/FrontDeck-1.4.0.apk"
+        apk = ROOT / "dist/FrontDeck-1.4.1.apk"
         report = json.loads((ROOT / "build/android/verification.json").read_text(encoding="utf-8"))
         if report["package"] != PACKAGE or hashlib.sha256(apk.read_bytes()).hexdigest() != report["sha256"]:
             raise RuntimeError("빌드 검증 결과와 APK가 다릅니다. 다시 빌드하세요.")
@@ -43,7 +43,7 @@ def main():
         if "Success" not in output: raise RuntimeError("APK 설치를 확인하지 못했습니다.")
     if not device.run("shell", "pm", "path", "--user", "0", PACKAGE).startswith("package:"):
         raise RuntimeError("FrontDeck APK가 설치돼 있지 않습니다. --install을 사용하세요.")
-    command = ['shell', 'am', 'start', '-n', PACKAGE + '/.DeckActivity', '--es', 'pairing_code', str(bootstrap['pin'])]
+    command = ['shell', 'am', 'start', '-n', PACKAGE + '/.DeckActivity']
     if args.bluetooth:
         import re
         bluetooth = bootstrap.get('bluetooth')
@@ -53,6 +53,7 @@ def main():
             device.run('shell', 'pm', 'grant', '--user', '0', PACKAGE, 'android.permission.' + permission)
         command += ['--es', 'bluetooth_address', bluetooth['address']]
     elif args.wireless:
+        command += ['--es', 'pairing_code', str(bootstrap['pin'])]
         from sys import path as module_path
         module_path.insert(0, str(ROOT))
         from frontdeck.wireless import lan_address
@@ -65,6 +66,7 @@ def main():
             raise RuntimeError('PC 무선 연결 정보가 올바르지 않습니다.')
         command += ['--es', 'wireless_host', host, '--ei', 'wireless_port', str(wireless['port']), '--es', 'wireless_fingerprint', wireless['fingerprint']]
     else:
+        command += ['--es', 'pairing_code', str(bootstrap['pin'])]
         device.run("reverse", "tcp:38765", "tcp:38765")
         if "tcp:38765 tcp:38765" not in device.run("reverse", "--list"):
             raise RuntimeError("PC 통신 포트를 확인하지 못했습니다.")

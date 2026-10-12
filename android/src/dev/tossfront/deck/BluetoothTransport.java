@@ -59,6 +59,9 @@ final class BluetoothTransport {
             JSONObject response = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
             if (!id.equals(response.getString("id"))) throw new IllegalStateException();
             JSONObject result = response.getJSONObject("result");
+            if (route.equals("pair") && body.length() == 0 && response.getInt("status") == 400) {
+                return new JSONObject().put("error", "PC의 FrontDeck 연결 프로그램을 최신 버전으로 업데이트한 뒤 다시 연결하세요.");
+            }
             if (route.equals("config") && response.getInt("status") == 200) result.put("transport", "bluetooth");
             return result;
         } catch (Exception failure) {

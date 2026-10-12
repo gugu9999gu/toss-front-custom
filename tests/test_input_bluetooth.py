@@ -4,9 +4,12 @@ import socket
 import struct
 import threading
 import unittest
-from frontdeck.bluetooth import read_frame, write_frame, dispatch, MAX_REQUEST, SOCKADDR_BTH, WSAQUERYSET
+from unittest.mock import Mock, patch
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from frontdeck.bluetooth import read_frame, write_frame, dispatch, MAX_REQUEST, SOCKADDR_BTH, WSAQUERYSET, DEVICE_INFO, bonded_socket_peer, BluetoothServer
 from frontdeck.input_control import InputController, NativeInput
-from frontdeck.server import Controller, WindowsExecutor, KEYS, validate_config
+from frontdeck.server import Controller, FrontDeckServer, WindowsExecutor, KEYS, validate_config
 
 
 class Recorder:
@@ -86,6 +89,73 @@ class BluetoothTests(unittest.TestCase):
     def test_native_sdp_structures_match_windows_abi(self):
         self.assertEqual(ctypes.sizeof(SOCKADDR_BTH), 30)
         if ctypes.sizeof(ctypes.c_void_p) == 8: self.assertEqual(ctypes.sizeof(WSAQUERYSET), 120)
+        if ctypes.sizeof(ctypes.c_wchar) == 2: self.assertEqual(ctypes.sizeof(DEVICE_INFO), 560)
+
+    def test_code_free_pair_requires_out_of_band_os_bond(self):
+        pair = dict(self.message, route='pair', token='', body={})
+        self.controller.pin_deadline = 0
+        denied = dispatch(self.controller, pair)
+        self.assertEqual(denied['status'], 403)
+        self.assertNotIn('token', denied['result'])
+        accepted = dispatch(self.controller, pair, bonded_peer=True)
+        self.assertEqual(accepted['status'], 200)
+        self.assertEqual(accepted['result']['token'], self.controller.token)
+        with self.assertRaises(ValueError): dispatch(self.controller, dict(pair, bonded_peer=True))
+        self.assertEqual(dispatch(self.controller, dict(pair, body={'bonded_peer': True}))['status'], 400)
+        # Bonding bootstraps a token; it never authorizes a tokenless command.
+        self.assertEqual(dispatch(self.controller, dict(self.message, token=''), bonded_peer=True)['status'], 401)
+
+    def test_http_cannot_use_code_free_bluetooth_bootstrap(self):
+        server = FrontDeckServer(('127.0.0.1', 0), self.controller)
+        worker = threading.Thread(target=server.serve_forever); worker.start()
+        try:
+            for body in [{}, {'bonded_peer': True}]:
+                request = Request('http://127.0.0.1:' + str(server.server_port) + '/api/pair',
+                                  data=json.dumps(body).encode(), headers={'Content-Type': 'application/json'})
+                with self.assertRaises(HTTPError) as failure: urlopen(request, timeout=3)
+                self.assertEqual(failure.exception.code, 400)
+                self.assertNotIn('token', json.loads(failure.exception.read()))
+                failure.exception.close()
+        finally:
+            server.shutdown(); server.server_close(); worker.join()
+
+    def test_windows_peer_bond_is_not_just_a_remembered_device(self):
+        peer = Mock(family=socket.AF_BLUETOOTH, proto=socket.BTPROTO_RFCOMM)
+        peer.getpeername.return_value = ('11:22:33:44:55:66', 4)
+        api, kernel = Mock(), Mock()
+        def first(params, radio): radio._obj.value = 7; return 9
+        api.BluetoothFindFirstRadio.side_effect = first
+        api.BluetoothFindNextRadio.return_value = 0
+        def info(radio, device): device._obj.remembered = 1; device._obj.authenticated = authenticated; return error
+        api.BluetoothGetDeviceInfo.side_effect = info
+        for authenticated, error, expected in [(0, 0, False), (1, 0, True), (1, 1168, False)]:
+            with patch('frontdeck.bluetooth.ctypes.WinDLL', side_effect=[api, kernel]):
+                self.assertEqual(bonded_socket_peer(peer), expected)
+        self.assertEqual(kernel.CloseHandle.call_count, 3)
+        self.assertEqual(api.BluetoothFindRadioClose.call_count, 3)
+        peer.family = socket.AF_INET
+        with patch('frontdeck.bluetooth.ctypes.WinDLL') as dll:
+            self.assertFalse(bonded_socket_peer(peer)); dll.assert_not_called()
+
+    def test_listener_bootstrap_checks_the_socket_peer(self):
+        pair = dict(self.message, route='pair', token='', body={})
+        raw = json.dumps(pair).encode()
+        self.controller.pin_deadline = 0
+        for bonded, status in [(False, 403), (True, 200)]:
+            left, right = socket.socketpair()
+            server = BluetoothServer.__new__(BluetoothServer)
+            server.controller, server.closed = self.controller, threading.Event()
+            server.lock, server.clients = threading.Lock(), {left}
+            server.slots = threading.BoundedSemaphore(1); server.slots.acquire()
+            server.requests = server.input_requests = 0
+            right.sendall(struct.pack('!I', len(raw)) + raw)
+            right.shutdown(socket.SHUT_WR)
+            with patch('frontdeck.bluetooth.bonded_socket_peer', return_value=bonded) as check:
+                server.handle(left); check.assert_called_once_with(left)
+            reply = read_frame(right); right.close()
+            self.assertEqual(reply['status'], status)
+            self.assertEqual('token' in reply['result'], bonded)
+            self.assertEqual(server.requests, int(bonded))
 
     def test_auth_routes_pin_expiry(self):
         self.assertEqual(dispatch(self.controller, self.message)['status'], 200)

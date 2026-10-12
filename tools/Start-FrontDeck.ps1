@@ -49,11 +49,11 @@ if ($Wireless -or $UsbOnly) { @{enabled=[bool]$useWireless} | ConvertTo-Json | S
 if ($Bluetooth -or $UsbOnly) { @{enabled=[bool]$useBluetooth} | ConvertTo-Json | Set-Content -LiteralPath $bluetoothSettingsPath -Encoding UTF8 }
 $bootstrap = Get-Content -LiteralPath (Join-Path $stateDir 'bootstrap.json') -Raw | ConvertFrom-Json
 if ($bootstrap.expires_at -gt [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) {
-    Write-Host ('FrontDeck 실행 중 · 연결 코드: ' + $bootstrap.pin + ' (최대 5분)')
+    Write-Host ('FrontDeck 실행 중 · USB/Wi-Fi 연결 코드: ' + $bootstrap.pin + ' (최대 5분)')
 } elseif ($running.wireless_enabled) { Write-Host 'FrontDeck 실행 중 · 무선 연결 설정 창에서 새 연결 코드를 발급하세요.' }
 else { Write-Host 'FrontDeck 실행 중 · 새 기기 연결 코드는 프로그램 재시작 후 발급됩니다.' }
 if ($running.wireless_enabled) { Write-Host 'Wi-Fi 연결 설정: http://127.0.0.1:38765/connect/' }
-if ($running.bluetooth_enabled) { Write-Host 'Bluetooth 활성화 · PC와 기기를 OS 설정에서 먼저 페어링하세요.' }
+if ($running.bluetooth_enabled) { Write-Host 'Bluetooth 활성화 · OS 페어링 후 FrontDeck에서 PC를 선택하세요. 8자리 입력은 필요 없습니다.' }
 if ($Serial) {
     if ($Serial -notmatch '^[A-Za-z0-9_.:\-]+$' -or $Adb.Contains('"')) { throw '기기 식별값 또는 ADB 경로가 올바르지 않습니다.' }
     $watchPath = Join-Path $projectRoot 'tools\watch_deck.py'

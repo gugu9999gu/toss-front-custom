@@ -446,12 +446,12 @@ class Handler(BaseHTTPRequestHandler):
         bluetooth = ''
         if c.bluetooth:
             name = html.escape(c.bluetooth.info['name'])
-            bluetooth = f'<section>Bluetooth PC 이름<b>{name}</b><p>PC와 기기를 OS Bluetooth 설정에서 페어링한 뒤, FrontDeck 설정 → Bluetooth 연결에서 이 PC와 아래 연결 코드를 선택하세요.</p></section>'
+            bluetooth = f'<section>Bluetooth PC 이름<b>{name}</b><p>PC와 기기를 OS Bluetooth 설정에서 페어링한 뒤, FrontDeck 설정 → Bluetooth 연결에서 이 PC를 선택하세요. Bluetooth는 8자리 코드 입력 없이 연결됩니다.</p></section>'
         with c.lock:
             pin = c.pin if time.monotonic() < c.pin_deadline else '만료됨'
         body = f'''<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FrontDeck 무선 연결</title><style>body{{font:17px system-ui;background:#101217;color:#eef3f7;margin:0;padding:48px 24px}}main{{max-width:560px;margin:auto}}h1{{font-size:32px}}small,p{{color:#aab7c6;line-height:1.7}}section{{padding:22px;background:#1c222b;border-radius:18px;margin:16px 0}}b{{display:block;font-size:28px;letter-spacing:2px;margin:8px 0}}button{{font:inherit;border:0;border-radius:12px;background:#70dcb3;color:#09251b;padding:14px 20px;cursor:pointer}}</style>
-<main><small>FRONTDECK</small><h1>PC 연결</h1>{wifi}{bluetooth}<section>연결 코드 · 5분<b>{pin}</b></section>
+<main><small>FRONTDECK</small><h1>PC 연결</h1>{wifi}{bluetooth}<section>USB·Wi-Fi 연결 코드 · 5분<b>{pin}</b></section>
 <form method="post" action="/connect/renew"><input type="hidden" name="nonce" value="{c.setup_nonce}"><button>새 연결 코드</button></form><p>한 번 연결하면 주소와 연결 정보가 기기에 저장됩니다. PC 프로그램과 기기의 네트워크 연결을 유지해 주세요.</p></main></html>'''
         return self.reply(200, body.encode('utf-8'), 'text/html; charset=utf-8')
 
