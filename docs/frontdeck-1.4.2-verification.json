@@ -1,0 +1,48 @@
+{
+  "date_kst": "2026-10-12",
+  "version": "1.4.2",
+  "installed_apk_sha256": "90a688cd97cb8b6108cd03dbe59cb6649baf116a4d93197608e9b8849f6494ec",
+  "android_sdk": 36,
+  "regression_tests_failed_before_fix": true,
+  "accepted_bluetooth_proto_zero_os_bond_lookup": true,
+  "native_windows_os_bond_lookup_verified": true,
+  "windows_lookup_socket_was_test_object": true,
+  "native_android_multitouch_on_production_webview": true,
+  "android_multitouch_input_sequence": [
+    {
+      "kind": "wheel",
+      "vertical": 100,
+      "horizontal": 0
+    },
+    {
+      "kind": "wheel",
+      "vertical": 100,
+      "horizontal": 0
+    },
+    {
+      "kind": "move",
+      "dx": 80,
+      "dy": 40
+    },
+    {
+      "kind": "move",
+      "dx": 20,
+      "dy": 20
+    },
+    {
+      "kind": "click",
+      "button": "left"
+    }
+  ],
+  "resumed_motion_no_centroid_jump": true,
+  "scroll_end_no_phantom_click": true,
+  "javascript_slow_inflight_scroll_transition": true,
+  "javascript_lost_capture_recovery": true,
+  "javascript_two_finger_right_tap_preserved": true,
+  "javascript_cancellation_and_ime_passed": true,
+  "python_tests_passed": 47,
+  "pc_companion_updated": true,
+  "pc_buttons_and_credentials_preserved": true,
+  "real_windows_radio_end_to_end_verified": false,
+  "physical_devices_updated": false
+}

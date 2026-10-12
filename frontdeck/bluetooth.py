@@ -106,7 +106,10 @@ class RADIO_SEARCH(ctypes.Structure):
 
 def bonded_socket_peer(client):
     """Check the actual encrypted socket peer against Windows OS bond records."""
-    if client.family != socket.AF_BLUETOOTH or client.proto != socket.BTPROTO_RFCOMM:
+    # This is called only for clients accepted by our authenticated, encrypted
+    # RFCOMM listener. Windows may expose proto=0 on the accepted socket.
+    # Use the socket's actual peer address, never protocol metadata or JSON.
+    if client.family != socket.AF_BLUETOOTH:
         return False
     address = client.getpeername()[0]
     if not isinstance(address, str) or not re.fullmatch(r'(?i)[0-9a-f]{2}(:[0-9a-f]{2}){5}', address):

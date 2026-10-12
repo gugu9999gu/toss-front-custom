@@ -3,6 +3,7 @@
   const session = requestId(), touches = new Map(), modifiers = new Set();
   let seq = 0, inputBusy = false, movement = {dx: 0, dy: 0, vertical: 0, horizontal: 0};
   let start = 0, distance = 0, fingers = 0, speed = Number(localStorage.getItem("pointer-speed")) || 2;
+  let tapAllowed = false;
   let composing = false;
   const pad = $("touchpad"), dot = $("touch-dot"), cap = (x, bound) => Math.max(-bound, Math.min(bound, Math.round(x)));
   async function send(kind, values) {
@@ -10,7 +11,20 @@
     if (!native) { feedback("PC 입력 · 미리보기"); return {ok: true}; }
     return request("input", {session, seq: ++seq, kind, ...values});
   }
-  const cancel = () => { touches.clear(); movement = {dx: 0, dy: 0, vertical: 0, horizontal: 0}; dot.hidden = true; };
+  function releaseCapture(id) { try { if (pad.hasPointerCapture(id)) pad.releasePointerCapture(id); } catch (_) {} }
+  const cancel = () => {
+    const captured = [...touches.keys()]; touches.clear();
+    movement = {dx: 0, dy: 0, vertical: 0, horizontal: 0}; fingers = 0; tapAllowed = false; dot.hidden = true;
+    captured.forEach(releaseCapture);
+  };
+  function activeMotion() {
+    // Drop unsent motion from the previous mode; in-flight input can finish.
+    if (touches.size === 1) { movement.vertical = 0; movement.horizontal = 0; }
+    else if (touches.size >= 2) {
+      movement.dx = 0; movement.dy = 0;
+      if (touches.size > 2) { movement.vertical = 0; movement.horizontal = 0; }
+    }
+  }
   window.DeckInput = {mode: "panel", cancel};
   function select(mode) {
     cancel(); DeckInput.mode = mode;
@@ -26,24 +40,34 @@
   $("pointer-speed").addEventListener("input", e => { speed = Number(e.target.value); $("speed-value").textContent = speed + "×"; localStorage.setItem("pointer-speed", speed); });
   function center() { const points = [...touches.values()]; return {x: points.reduce((n, p) => n + p.x, 0) / points.length, y: points.reduce((n, p) => n + p.y, 0) / points.length}; }
   pad.addEventListener("pointerdown", e => {
-    e.preventDefault(); if (native && !connected) return;
-    if (!touches.size) { start = performance.now(); distance = 0; fingers = 0; }
-    touches.set(e.pointerId, {x: e.clientX, y: e.clientY}); fingers = Math.max(fingers, touches.size); pad.setPointerCapture(e.pointerId);
+    e.preventDefault(); if ((native && !connected) || touches.has(e.pointerId)) return;
+    if (!touches.size) { start = performance.now(); distance = 0; fingers = 0; tapAllowed = true; }
+    touches.set(e.pointerId, {x: e.clientX, y: e.clientY}); fingers = Math.max(fingers, touches.size); activeMotion();
+    try { pad.setPointerCapture(e.pointerId); } catch (_) { finishPointer(e, false); }
   });
   pad.addEventListener("pointermove", e => {
     if (!touches.has(e.pointerId)) return; e.preventDefault();
     const before = center(); touches.set(e.pointerId, {x: e.clientX, y: e.clientY}); const after = center();
     const dx = after.x - before.x, dy = after.y - before.y; distance += Math.hypot(dx, dy);
-    if (touches.size === 1 && fingers === 1) { movement.dx += dx * speed; movement.dy += dy * speed; }
+    if (touches.size === 1) { movement.dx += dx * speed; movement.dy += dy * speed; }
     else if (touches.size === 2) { movement.vertical += dy * 5; movement.horizontal += dx * 5; }
     const bounds = pad.getBoundingClientRect(); dot.hidden = false;
     dot.style.left = (after.x - bounds.left) + "px"; dot.style.top = (after.y - bounds.top) + "px";
   });
-  pad.addEventListener("pointerup", e => {
-    if (!touches.has(e.pointerId)) return; touches.delete(e.pointerId);
-    if (!touches.size) { dot.hidden = true; if (distance < 8 && performance.now() - start < 450 && fingers <= 2) click(fingers === 2 ? "right" : "left"); }
-  });
-  pad.addEventListener("pointercancel", cancel); pad.addEventListener("contextmenu", e => e.preventDefault());
+  function finishPointer(e, up) {
+    if (!touches.has(e.pointerId)) return;
+    if (!up) tapAllowed = false;
+    touches.delete(e.pointerId); releaseCapture(e.pointerId);
+    if (touches.size) { activeMotion(); return; }
+    dot.hidden = true;
+    if (!up) movement = {dx: 0, dy: 0, vertical: 0, horizontal: 0};
+    if (up && tapAllowed && distance < 8 && performance.now() - start < 450 && fingers <= 2) click(fingers === 2 ? "right" : "left");
+    fingers = 0; tapAllowed = false;
+  }
+  pad.addEventListener("pointerup", e => finishPointer(e, true));
+  pad.addEventListener("pointercancel", e => finishPointer(e, false));
+  pad.addEventListener("lostpointercapture", e => finishPointer(e, false));
+  pad.addEventListener("contextmenu", e => e.preventDefault());
   async function flush() {
     if (inputBusy || document.hidden || DeckInput.mode !== "touchpad" || (native && !connected)) return;
     const wheel = movement.vertical || movement.horizontal;

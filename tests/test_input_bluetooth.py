@@ -120,13 +120,16 @@ class BluetoothTests(unittest.TestCase):
             server.shutdown(); server.server_close(); worker.join()
 
     def test_windows_peer_bond_is_not_just_a_remembered_device(self):
-        peer = Mock(family=socket.AF_BLUETOOTH, proto=socket.BTPROTO_RFCOMM)
+        # Windows accepted RFCOMM sockets may report proto=0.
+        peer = Mock(family=socket.AF_BLUETOOTH, proto=0)
         peer.getpeername.return_value = ('11:22:33:44:55:66', 4)
         api, kernel = Mock(), Mock()
         def first(params, radio): radio._obj.value = 7; return 9
         api.BluetoothFindFirstRadio.side_effect = first
         api.BluetoothFindNextRadio.return_value = 0
-        def info(radio, device): device._obj.remembered = 1; device._obj.authenticated = authenticated; return error
+        def info(radio, device):
+            self.assertEqual(device._obj.address, 0x112233445566)
+            device._obj.remembered = 1; device._obj.authenticated = authenticated; return error
         api.BluetoothGetDeviceInfo.side_effect = info
         for authenticated, error, expected in [(0, 0, False), (1, 0, True), (1, 1168, False)]:
             with patch('frontdeck.bluetooth.ctypes.WinDLL', side_effect=[api, kernel]):
